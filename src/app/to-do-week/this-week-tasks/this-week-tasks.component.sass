@@ -1,0 +1,97 @@
+$tagElementFontSize: 14px
+$taskContentFontSize: 15px
+
+
+@keyframes fadein
+  from
+    opacity: 0
+  to
+    opacity: 1
+
+.fadeIn
+    -webkit-animation: fadein 2s
+    -moz-animation: fadein 2s
+    -ms-animation: fadein 2s
+    -o-animation: fadein 2s
+    animation: fadein 2s
+
+
+.tag
+    margin-top: 120px
+    margin-bottom: 30px
+    &__title
+        font-size: $tagElementFontSize
+        padding-top: 3px
+        margin-right: 2px
+    &__button
+        padding: 0px 6px
+        margin-left: 3px
+        font-size: $tagElementFontSize
+    &__input
+        &--tag
+            margin: 5px
+            padding: 0px 6px
+            width: 25%
+            height: 22px
+            margin-top: 2px
+            border: 1px solid black
+            border-radius: 3px
+            font-size: $tagElementFontSize
+            color: black
+            white-space: pre
+    &--inline
+        @extend .fadeIn
+        display: -webkit-box
+        width: 80%
+
+.todo
+    margin: 20px 0px
+    &__content
+        font-weight: 200
+        font-size: $taskContentFontSize
+        word-break: break-all
+        &--inline
+             display: -webkit-box
+             margin: 15px 0px
+        &--completed
+             text-decoration: line-through
+    &__checkBox
+        &--unfilled
+            border-radius: 50%
+            margin: 0px 4px
+            width: 17px
+            height: 17px
+            border: 1px
+            color: white
+            background: white
+            border: 1px solid black
+        &--filled
+            @extend .todo__checkBox--unfilled
+            background: black
+    &__button
+        &--delete--hide
+            display: none
+        &--delete--show
+            display: inline
+            padding: 0px
+            width: 30px
+            height: 22px
+
+        &--delete--content
+            padding: 0px
+            font-size: 20px
+
+@media screen and (max-width: 768px)
+    .todo__button--delete--hide
+        display: inline
+        padding: 0px
+        width: 30px
+        height: 22px
+    .todo__content--phone
+        width: 80%
+        display: inline
+    .todo__button--delete--show
+         margin-left: 10px
+    .todo__button--delete--hide
+         margin-left: 10px
+

@@ -1,0 +1,43 @@
+$dateFontSize: 15px
+$taskFontSize: 15px
+$CheckBoxButtonsWidthAndHeight: 10px
+
+@keyframes fadein
+  from
+    opacity: 0
+  to
+    opacity: 1
+
+.fadeIn
+    -webkit-animation: fadein 2s
+    -moz-animation: fadein 2s
+    -ms-animation: fadein 2s
+    -o-animation: fadein 2s
+    animation: fadein 2s
+
+.display--inline
+    display: -webkit-box
+
+.week
+    &__container
+        margin-top: 100px
+    &__date
+        font-size: $dateFontSize
+        display: inline
+        font-weight: 400
+        margin-bottom: 5px
+        text-transform: uppercase
+        letter-spacing: 1px
+        margin-top: 20px
+    &__line
+        &--date
+            width: 60%
+    &__task
+        &--content
+            font-weight: 300
+            text-align: center
+            font-size: $taskFontSize
+        &--content--realized
+             text-decoration: line-through
+
+

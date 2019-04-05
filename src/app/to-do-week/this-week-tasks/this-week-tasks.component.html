@@ -1,0 +1,84 @@
+<div>
+  <h3 class="page__text--title mt-5 mb-5">This week todo list</h3>
+  <div class="tag">
+    <div class="tag--inline">
+      <p class="tag__title">Select a tag</p>
+      <button class="btn btn-outline-dark tag__button" *ngFor="let tagName of this.db.thisWeekTags"
+        (click)="toggleSortByTag(tagName)" [ngClass]="(tagName == clickedTag) ? 'active' : ''">{{tagName}}</button>
+    </div>
+  </div>
+
+  <div class="todo">
+    <div *ngFor="let task of this.db.thisWeekTasks;let index=index" class="mt-3">
+      <span class="todo__content--inline todo__content--phone" *ngIf="sortNgIfByTag(task.tag)"
+        (mouseenter)="this.db.emptyArrayForTextHovering[index] = true"
+        (mouseleave)="this.db.emptyArrayForTextHovering[index] = false">
+
+        <button (click)="deleteTask(task.id)" class="btn btn-outline-dark"
+          [ngClass]="( this.db.emptyArrayForTextHovering[index]  ? 'todo__button--delete--show' : 'todo__button--delete--hide')"><i
+            class="material-icons todo__button--delete--content"> delete_forever </i></button>
+
+        <button class="btn btn-outline-dark tag__button" type="button">{{task.tag}}</button>
+
+        <p class="todo__content ml-2 mr-1"
+          [ngClass]="( (task.checkBoxQuantity == task.checkBoxQuantityRealized && task.haveCheckBox) ||  task.taskRealized && !task.haveCheckBox ) ? 'todo__content--completed' : ''"
+          (click)="toggleTaskStatus(task.id,task.taskRealized,task.haveCheckBox)">
+          {{ task.taskContent }}
+          <span *ngIf="task.haveCheckBox" class="todo__content">
+            ({{ task.checkBoxStandard }}
+            <button
+              [ngClass]="(checkBoxIndex < task.checkBoxQuantityRealized) ? 'todo__checkBox--filled' : 'todo__checkBox--unfilled'"
+              *ngFor="let checkbox of createLenghtArray(task.checkBoxQuantity);let checkBoxIndex = index"
+              (click)="toggleCheckBox(task.id,task.checkBoxQuantityRealized,checkBoxIndex < task.checkBoxQuantityRealized)">
+            </button>)
+          </span>
+        </p>
+      </span>
+    </div>
+
+    <button class="btn btn-outline-dark btn-sm float-right mt-3"
+      (click)="newEventFormToggler = !newEventFormToggler">Add new
+      task</button>
+    <form (ngSubmit)="addTask(addTaskForm.value)" #addTaskForm="ngForm" *ngIf="newEventFormToggler" autocomplete="off">
+      <mat-form-field class="tag__input--addTag mt-5">
+        <input matInput placeholder="New Task" aria-describedby="New Task" name="taskContent" ngModel required>
+      </mat-form-field>
+
+      <div class="tag--inline">
+        <p class="tag__title">Select a tag</p>
+        <button class="btn btn-outline-dark tag__button" type="button" *ngFor="let tagName of this.db.thisWeekTags"
+          (click)="tagFormValue = tagName">{{tagName}}</button>
+        <input class="tag__input--tag" type="text" placeholder="New Tag" name="tag" [(ngModel)]="tagFormValue" required>
+        <!-- <input class="tag__input--tag" type="text" placeholder="New Tag" name="tag" ngModel required> -->
+      </div>
+      <br>
+
+      <mat-form-field>
+        <mat-select placeholder="Week For This Task" [(ngModel)]="selectedWeek" name="selectedWeekForm" required>
+          <mat-option *ngFor="let week of nextWeeks;let i=index" [value]="week.startOfWeek">
+            {{week.startOfWeek | date:'dd/MM/yy'}} -
+            {{week.endOfWeek | date:'dd/MM/yy'}}
+          </mat-option>
+        </mat-select>
+      </mat-form-field> <br>
+      <mat-checkbox [(ngModel)]="toggleCheckboxInput" name="haveCheckBox" ngDefaultControl>
+        Activate checkboxes for task
+      </mat-checkbox>
+
+      <div *ngIf="toggleCheckboxInput" class="tag__input--addTag">
+        <mat-form-field class="tag__input--addTag mr-2">
+          <input matInput type="text" placeholder="Standard" name="checkBoxStandard" ngModel required>
+          <mat-hint>Eg: Hours</mat-hint>
+        </mat-form-field>
+
+        <mat-form-field class="tag__input--addTag">
+          <input matInput type="text" placeholder="Quantity" name="checkBoxQuantity" ngModel required>
+        </mat-form-field>
+
+      </div>
+      <br>
+      <button class="btn btn-outline-dark btn-sm"
+        [disabled]="addTaskForm.touched && !addTaskForm.valid && tagFormValue == ''" type="submit">Add</button>
+    </form>
+  </div>
+</div>

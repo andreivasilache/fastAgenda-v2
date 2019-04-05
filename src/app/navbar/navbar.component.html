@@ -1,0 +1,48 @@
+<div id="wrapper" [className]="navbarToggled ? 'toggled' : '' " class="toggled">
+  <!-- Sidebar -->
+  <div id="sidebar-wrapper">
+    <ul class="sidebar-nav">
+      <li class="sidebar-brand">
+        <a routerLink="/today">
+          fast<span>AGENDA</span>
+        </a>
+      </li>
+
+      <div class="userLoginCtrl">
+        <li *ngIf="auth.user$ | async as user;else login ">
+          <img src="{{user.photoURL}}" alt="User profile picture" class="profilePicture">
+          <span class="userName">{{user.displayName}}</span>
+          <i (click)="logOut()" class="fas fa-sign-out-alt logOutBtn"></i>
+        </li>
+        <ng-template #login>
+          <li>
+            <a (click)="logIn()" class="loginBtn">
+              <i class="fab fa-google"></i> Login
+            </a>
+          </li>
+        </ng-template>
+      </div>
+
+      <li>
+        <a routerLink="/toDoWeek">Events</a>
+      </li>
+      <li>
+        <a routerLink="/today">Today's agenda</a>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Page Content -->
+  <div id="page-content-wrapper">
+    <div class="container-fluid">
+      <a id="menu-toggle" (click)="toggleNavbar()">
+        <i class="fas fa-bars"></i>
+      </a>
+      <div class="container">
+        <div class="pageContainer">
+          <router-outlet></router-outlet>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

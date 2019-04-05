@@ -1,0 +1,148 @@
+<div>
+  <div class="clock">
+    <p class="clock__hour">{{hour}} <span class="clock__minutes">{{minutes}}</span>
+    </p>
+    <span class="date">{{todayDate}}</span>
+  </div>
+  <hr>
+
+  <h4 class="card card__fadeIn " *ngFor="let task of todayEvents; let eventsIterator=index">
+    <span class="card__title"> {{task.summary}} <span>(Now)</span> </span>
+    <div class="card__duration--wrapper">
+      <p class="card__duration ">
+        {{task.startHour}}:{{task.startMinutes}}-</p>
+      <p class="card__duration ">
+        {{ task.endHour }}:{{ task.endMinutes }}
+      </p>
+    </div>
+    <span class="card__description">
+      {{task.description}}
+    </span>
+    <div class="mt-3">
+      <button class="btn btn-outline-dark btn-sm button__delete float-right"
+        (click)="deleteEvent(task.id,eventsIterator)">Delete</button>
+      <button class="btn btn-outline-dark btn-sm button__edit float-right mr-2"
+        (click)="editEventToggler[eventsIterator] = !editEventToggler[eventsIterator]">Edit</button>
+    </div>
+    <form *ngIf="editEventToggler[eventsIterator]"
+      (ngSubmit)="saveChanges(editform.value,todayEvents[eventsIterator].id,eventsIterator)" #editform="ngForm">
+
+      <div class="card__input--editInput">
+        <mat-form-field>
+          <input matInput placeholder="Title" aria-describedby="New Title" name="title"
+            [ngModel]="todayEvents[eventsIterator].summary">
+        </mat-form-field>
+
+        <mat-form-field class="card__input--description">
+          <textarea matInput placeholder="Description" type="text" aria-describedby="New Description" name="description"
+            [ngModel]="todayEvents[eventsIterator].description" required>
+          </textarea>
+        </mat-form-field>
+
+        <mat-form-field class="card__input--dropdown">
+          <mat-select placeholder="HH" (click)="generateDropdownHoursStart(eventsIterator)" name="startHour"
+            [(ngModel)]="todayEvents[eventsIterator].startHour" required>
+            <mat-option *ngFor="let hour of dropDownRemainedHoursStart" [value]="hour">{{hour}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field class="card__input--dropdown">
+          <mat-select placeholder="MM" name="startMinutes" [(ngModel)]="todayEvents[eventsIterator].startMinutes"
+            required>
+            <mat-option *ngFor="let minute of dropDownMinutes" [value]="minute">{{minute}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <span>:</span>
+
+        <mat-form-field class="card__input--dropdown">
+          <mat-select placeholder="HH" (click)="generateDropdownHoursEnd()" name="endHour"
+            [(ngModel)]="todayEvents[eventsIterator].endHour" required>
+            <mat-option *ngFor="let hour of dropDownRemainedHoursEnd" [value]="hour">{{hour}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field class="card__input--dropdown">
+          <mat-select placeholder="MM" name="endMinutes" [(ngModel)]="todayEvents[eventsIterator].endMinutes" required>
+            <mat-option *ngFor="let minute of dropDownMinutes" [value]="minute">{{minute}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+      </div>
+
+      <div [hidden]="todayEvents[eventsIterator].startHour <= todayEvents[eventsIterator].endHour"
+        class="alert alert-danger page__text--error" role="alert">
+        Start Hour value needs to be smaller than end hour value!
+      </div>
+      <div *ngIf="todayEvents[eventsIterator].startMinutes >= todayEvents[eventsIterator].endMinutes &&
+        todayEvents[eventsIterator].startHour == todayEvents[eventsIterator].endHour"
+        class="alert alert-danger page__text--error" role="alert">
+        Start Minutes value needs to be smaller than end minutes value!
+      </div>
+      <button class="btn btn-success float-right btn-sm">Save</button>
+    </form>
+  </h4>
+  <button class="btn btn-outline-dark btn-sm float-right mg-4 mb-5" (click)="addNewEventClickEvent()">Add
+    task</button>
+
+  <form (ngSubmit)="saveNewEvent(newEvent.value)" #newEvent="ngForm" *ngIf="toggleAddEventForm">
+
+    <div class="card__input">
+      <mat-form-field>
+        <input matInput placeholder="Title" aria-describedby="New Title" name="title" ngModel required>
+      </mat-form-field>
+      <br>
+
+      <mat-form-field class="card__input--description">
+        <textarea matInput placeholder="Description" aria-describedby="New Description" name="description" required
+          ngModel>
+            </textarea>
+      </mat-form-field>
+
+      <mat-form-field class="card__input--dropdown">
+        <mat-select placeholder="HH" name="newEventStartHour" [(ngModel)]="newEventStartHourValue"
+          (ngModelChange)="generateMinutesForNewEvent('start',$event)" ngModel required>
+          <mat-option *ngFor="let hour of freeHours" [value]="hour">
+            {{hour}}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field class="card__input--dropdown">
+        <mat-label>MM</mat-label>
+        <mat-select name="newEventStartMinutes" [(ngModel)]="newEventStartMinuteValue" required>
+          <mat-option *ngFor="let minute of dropDownAddEventRemainedMinutesStart" [value]="minute">{{minute}}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <span> - </span>
+
+      <mat-form-field class="card__input--dropdown">
+        <mat-select placeholder="HH" (ngModelChange)="generateMinutesForNewEvent('end',$event)" name="newEventEndHour"
+          [(ngModel)]="newEventEndHourValue" required>
+          <mat-option *ngFor="let hour of freeHours" [value]="hour">{{hour}}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field class="card__input--dropdown">
+        <mat-select placeholder="MM" name="newEventEndMinutes" [(ngModel)]="newEventEndMinuteValue" required>
+          <mat-option *ngFor="let minute of dropDownAddEventRemainedMinutesStop" [value]="minute">{{minute}}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <div *ngIf="newEventStartHourValue > newEventEndHourValue" class="alert alert-danger page__text--error"
+        role="alert">
+        Start Hour value needs to be smaller than end hour value!
+      </div>
+
+      <div *ngIf="newEventStartMinuteValue >= newEventEndMinuteValue &&
+            newEventStartHourValue == newEventEndHourValue" class="alert alert-danger page__text--error" role="alert">
+        Start Minutes value needs to be smaller than end minutes value!
+      </div>
+
+    </div>
+    <button class="btn btn-outline-secondary btn-sm float-right mb-5 mt-3">Save</button>
+  </form>
+</div>

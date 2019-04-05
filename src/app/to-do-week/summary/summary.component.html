@@ -1,0 +1,28 @@
+<div>
+  <h3 class="page__text--title mt-5 mb-5">Weeks Summary</h3>
+  <div class="week__container">
+    <div class="row">
+      <div *ngFor="let week of this.db.tasksGroupedByWeek" class="week col-xs-12 col-sm-6 col-md-4 col-lg-4">
+        <span class="week__date">
+          <p class="text-center font-weight-light mt-5 fadeIn">
+            {{week.weekStartDate | date:'dd/MM/yy'}} -
+            {{week[0].weekEndDate | date:'dd/MM/yy'}}
+          </p>
+          <hr class="week__line--date fadeIn">
+        </span>
+        <span *ngFor="let task of week" class="week__task">
+          <p class="week__task--content"
+            [ngClass]="( task.taskRealized || (task.haveCheckBox && task.checkBoxQuantity == task.checkBoxQuantityRealized) ? 'week__task--content--realized' : '')">
+            {{task.taskContent}}
+            <span *ngIf="task.haveCheckBox">
+              <span class="week__task--content">
+                ({{task.checkBoxQuantityRealized}}/{{task.checkBoxQuantity}}
+                {{ task.checkBoxStandard }})
+              </span>
+            </span>
+          </p>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,60 @@
+
+@keyframes fadein
+  from
+    opacity: 0
+  to
+    opacity: 1
+
+label
+  font-weight: 400
+  font-size: 13px
+
+.clock
+  text-align: center
+  padding: 0
+  margin: 0
+  &__hour
+    font-size: 5.8em
+    font-weight: 600
+  &__minutes
+    font-weight: 400
+    font-size: 0.5em
+
+.date
+    text-align: center
+    font-size: 1.3em
+    letter-spacing: 2px
+
+.card
+  background: rgba(0,0,0,0)
+  padding: 15px
+  &__title
+    font-size: 1em
+  &__duration
+    font-weight: 100
+    font-size: 0.6em
+    &--wrapper
+      display: inherit
+  &__description
+    font-weight: 200
+    font-size: 0.8em
+  &__fadeIn
+    -webkit-animation: fadein 2.2s
+       -moz-animation: fadein 2.2s
+        -ms-animation: fadein 2.2s
+         -o-animation: fadein 2.2s
+            animation: fadein 2.2s
+  &__input
+    margin-top: 30px
+    &--description
+      width: 100%
+    &--dropdown
+      width: 19%
+      margin: 0px 5px
+    &--editInput
+      font-size: 18px
+
+.button
+   margin-left: 10px;
+
+
