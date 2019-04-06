@@ -4,24 +4,37 @@ import { AuthService } from './auth.service';
 import { AngularFireAuth } from 'angularfire2/auth';
 import { Observable } from 'rxjs';
 import * as moment from "moment";
+import * as localForage from "localforage";
+
+import { OfflineDbService } from './offline-db.service';
 
 
 @Injectable({
   providedIn: 'root'
 })
 export class DatabaseService {
+  toDoWeek = localForage.createInstance({ name: 'toDoWeek' });
+
+
   POSTuserTasksCollection;
   GETuserTasksCollection = new Observable<any>();
   userId;
 
-  thisWeekTasks = [];
+  thisWeekTasks: any = [];
+
   DBTasks = [];
   thisWeekTags = [];
   emptyArrayForTextHovering = [];
   tasksGroupedByWeek = [];
 
-  constructor(public db: AngularFireDatabase, public auth: AuthService, public firebaseAuth: AngularFireAuth) {
+  constructor(public db: AngularFireDatabase, public auth: AuthService, public firebaseAuth: AngularFireAuth, private offline: OfflineDbService) {
+    //  this.offline.getDoToWeekData();
     setTimeout(() => {
+      this.toDoWeek.getItem('toDoWeek', (err, value) => {
+        if (value) {
+          this.thisWeekTasks = value;
+        }
+      });
       let subscriber = firebaseAuth.authState.subscribe((userData) => {
         this.POSTuserTasksCollection = this.db.list(`/weekly-tasks/${userData.uid}`);
         this.GETuserTasksCollection = this.db.object(`/weekly-tasks/${userData.uid}`).valueChanges();
@@ -34,6 +47,18 @@ export class DatabaseService {
 
   pushDataToUserCollection(Data) {
     this.POSTuserTasksCollection.push(Data);
+    this.thisWeekTags.push(Data);
+    localForage.removeItem('toDoWeek').then(() => {
+      this.toDoWeek.setItem('toDoWeek', this.thisWeekTasks).then(() => {
+        this.toDoWeek.getItem('toDoWeek', (err, value) => {
+          if (value) {
+            this.thisWeekTasks = value;
+            this.extractTagsFromObject(this.thisWeekTasks);
+            this.toDoWeek.setItem('toDoWeek', this.thisWeekTasks);
+          }
+        });
+      });
+    });
   }
 
   sendDataObjectWithProprietyToArray(obj, arr, propriety) {
@@ -71,6 +96,7 @@ export class DatabaseService {
       this.extractTagsFromObject(this.thisWeekTasks);
       this.groupObjBy(this.DBTasks, 'weekStartDate');
       this.sortSumarryByDate();
+      this.toDoWeek.setItem('toDoWeek', this.thisWeekTasks).then(() => { });
     });
   }
 
