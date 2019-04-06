@@ -4,8 +4,8 @@
     </p>
     <span class="date">{{todayDate}}</span>
   </div>
+  <h3 class="page__text--note">Note: Not working in Offline mode!</h3>
   <hr>
-
   <h4 class="card card__fadeIn " *ngFor="let task of todayEvents; let eventsIterator=index">
     <span class="card__title"> {{task.summary}} <span>(Now)</span> </span>
     <div class="card__duration--wrapper">

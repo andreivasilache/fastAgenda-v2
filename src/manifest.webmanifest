@@ -1,7 +1,7 @@
 {
-  "name": "fastAgenda",
-  "short_name": "fastAgenda",
-  "theme_color": "#1976d2",
+  "name": "Fast Agenda",
+  "short_name": "Fast Agenda",
+  "theme_color": "#000000",
   "background_color": "#fafafa",
   "display": "standalone",
   "scope": "/",
