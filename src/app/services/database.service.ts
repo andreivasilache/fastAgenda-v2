@@ -89,7 +89,8 @@ export class DatabaseService {
 
   extractThisWeekTasks(objArr) {
     this.thisWeekTasks = [];
-    let startOfTheWeekDatISO = moment().startOf('week').add('d', 1).toDate().toISOString();
+    console.log()
+    let startOfTheWeekDatISO = moment().startOf('isoWeek').toDate().toISOString();
     for (let prop in objArr) {
       if (objArr[prop].weekStartDate == startOfTheWeekDatISO) {
         this.thisWeekTasks.push(objArr[prop]);

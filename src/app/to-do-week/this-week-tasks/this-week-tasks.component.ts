@@ -12,11 +12,6 @@ import * as moment from "moment";
 })
 export class ThisWeekTasksComponent implements OnInit {
 
-  // tags = [
-  //   "School",
-  //   "Sport"
-  // ];
-
   newEventFormToggler = false;
   toggleCheckboxInput = false;
   tagFormValue = '';
@@ -24,7 +19,7 @@ export class ThisWeekTasksComponent implements OnInit {
 
   dbTasks: WeekTask[];
   nextWeeks = [];
-  selectedWeek = moment().startOf('week').add('d', 1).toISOString();
+  selectedWeek = this.startOfWeekIso();
 
   constructor(public db: DatabaseService, private dialog: MatDialog) {
     this.generateNextWeeks(7);
@@ -32,20 +27,27 @@ export class ThisWeekTasksComponent implements OnInit {
 
   ngOnInit() {
   }
+  startOfWeekIso() {
+    return moment().startOf('isoWeek').toDate().toISOString();
+  }
+  endOfWeekIso() {
+    return moment().endOf('isoWeek').toDate().toISOString();
+  }
+
   generateNextWeeks(numberOfWeeks) {
     let currentWeek = moment();
     let itteratorWeek;
     let itterator = 0;
     this.nextWeeks.push({
-      startOfWeek: moment().startOf('week').add('d', 1).toISOString(),
-      endOfWeek: moment().endOf('week').add('d', 1).toISOString()
+      startOfWeek: this.startOfWeekIso(),
+      endOfWeek: this.endOfWeekIso()
     })
 
     while (itterator <= numberOfWeeks) {
-      itteratorWeek = currentWeek.startOf('day').add(1, 'w');
+      itteratorWeek = currentWeek.startOf('isoWeek').add(1, 'w');
       this.nextWeeks.push({
-        startOfWeek: itteratorWeek.startOf('week').toISOString(),
-        endOfWeek: itteratorWeek.endOf('week').toISOString()
+        startOfWeek: itteratorWeek.startOf('isoWeek').toISOString(),
+        endOfWeek: itteratorWeek.endOf('isoWeek').toISOString()
       })
 
       itterator++;
@@ -108,11 +110,12 @@ export class ThisWeekTasksComponent implements OnInit {
 
   addTask(value) {
     value.taskRealized = false;
-    let startOfThisWeek = moment().startOf('week').add('d', 1).toISOString();
+    let startOfThisWeek = this.startOfWeekIso();
     let isThisWeek = value.selectedWeekForm === startOfThisWeek ? true : false;
 
-    value.weekStartDate = isThisWeek ? moment().startOf('week').add('d', 1).toDate().toISOString() : moment(value.selectedWeekForm).toISOString();
-    value.weekEndDate = isThisWeek ? moment().endOf('week').add('d', 1).toDate().toISOString() : moment(value.selectedWeekForm).endOf('week').toISOString();
+
+    value.weekStartDate = isThisWeek ? startOfThisWeek : moment(value.selectedWeekForm).toISOString();
+    value.weekEndDate = isThisWeek ? this.endOfWeekIso() : moment(value.selectedWeekForm).endOf('week').toISOString();
 
     delete value.selectedWeek;
 
