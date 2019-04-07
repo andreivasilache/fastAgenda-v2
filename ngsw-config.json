@@ -9,6 +9,16 @@
         "/index.html",
         "/*.css",
         "/*.js"
+      ],
+      "urls": [
+        "https://fonts.googleapis.com/css?family=Roboto",
+        "https://use.fontawesome.com/releases/v5.7.0/css/all.css",
+        "https://fonts.googleapis.com/icon?family=Material+Icons",
+        "https://fonts.googleapis.com/css?family=Roboto:300,400,500",
+        "https://fastagenda-1cdc8.firebaseio.com/",
+        "/toDoWeek",
+        "/toDoWeek/",
+        "/toDoWeek/"
       ]
     }
   }, {
@@ -23,14 +33,14 @@
     }
   }],
   "dataGroups": [{
-    "name": "api-freshness",
+    "name": "This",
     "urls": [
-      "fastagenda-1cdc8.firebaseio.com"
+      "https://fastagenda-1cdc8.firebaseio.com"
     ],
     "cacheConfig": {
       "maxSize": 100,
       "maxAge": "24h",
-      "timeout": "3s",
+      "timeout": "1s",
       "strategy": "freshness"
     }
   }]
