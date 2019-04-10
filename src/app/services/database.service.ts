@@ -13,9 +13,6 @@ import { OfflineDbService } from './offline-db.service';
   providedIn: 'root'
 })
 export class DatabaseService {
-  toDoWeek = localForage.createInstance({ name: 'toDoWeek' });
-
-
   POSTuserTasksCollection;
   GETuserTasksCollection = new Observable<any>();
   userId;
@@ -28,36 +25,57 @@ export class DatabaseService {
   tasksGroupedByWeek = [];
 
   constructor(public db: AngularFireDatabase, public auth: AuthService, public firebaseAuth: AngularFireAuth, private offline: OfflineDbService) {
-    //  this.offline.getDoToWeekData();
+    // this.offline.getDoToWeekData();
     setTimeout(() => {
-      this.toDoWeek.getItem('toDoWeek', (err, value) => {
-        if (value) {
-          this.thisWeekTasks = value;
-        }
-      });
       let subscriber = firebaseAuth.authState.subscribe((userData) => {
         this.POSTuserTasksCollection = this.db.list(`/weekly-tasks/${userData.uid}`);
         this.GETuserTasksCollection = this.db.object(`/weekly-tasks/${userData.uid}`).valueChanges();
         this.userId = userData.uid;
         this.getUserDataForThisWeek();
         subscriber.unsubscribe();
+        this.getLocalDBData();
       });
+      this.getLocalDBData();
     }, 500)
+  }
+  getLocalDBData() {
+    this.offline.toDoWeek.getItem('toDoWeek', (err, value) => {
+      if (value && this.thisWeekTags.length == 0) {
+        this.thisWeekTasks = value;
+      }
+    });
   }
 
   pushDataToUserCollection(Data) {
     this.POSTuserTasksCollection.push(Data);
     this.thisWeekTags.push(Data);
+
+    if (this.offline.checkInternetConnection()) {
+      this.offline.pushDataToOfflineDb(Data);
+    }
+
+
+    //   this.offline.toDoWeek.getItem('toDoWeek').then((item) => {
+    //     console.log(item);
+    //     let localItem: any = item;
+    //     localItem.push(Data);
+    //     this.offline.toDoWeek.setItem('toDoWeek', localItem).then(() => {
+    //       console.log("Done!");
+    //     });
+    //   })
+  }
+
+  refreshOfflineDB() {
     localForage.removeItem('toDoWeek').then(() => {
-      this.toDoWeek.setItem('toDoWeek', this.thisWeekTasks).then(() => {
-        this.toDoWeek.getItem('toDoWeek', (err, value) => {
-          if (value) {
-            this.thisWeekTasks = value;
-            this.extractTagsFromObject(this.thisWeekTasks);
-            this.toDoWeek.setItem('toDoWeek', this.thisWeekTasks);
-          }
-        });
-      });
+      console.log("removed!")
+      // this.toDoWeek.setItem('toDoWeek', this.thisWeekTasks).then(() => {
+      //   this.toDoWeek.getItem('toDoWeek', (err, value) => {
+      //     this.getLocalDBData();
+      //     this.extractTagsFromObject(value);
+      //     debugger;
+
+      //   });
+      // });
     });
   }
 
@@ -96,7 +114,10 @@ export class DatabaseService {
       this.extractTagsFromObject(this.thisWeekTasks);
       this.groupObjBy(this.DBTasks, 'weekStartDate');
       this.sortSumarryByDate();
-      this.toDoWeek.setItem('toDoWeek', this.thisWeekTasks).then(() => { });
+
+      this.offline.saveToDoWeekData(this.thisWeekTasks);
+
+      // this.offline.toDoWeek.setItem('toDoWeek', this.thisWeekTasks).then(() => { });
     });
   }
 
