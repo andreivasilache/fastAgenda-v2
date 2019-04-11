@@ -38,26 +38,28 @@ export class OfflineDbService {
     this.toDoWeek.setItem('toDoWeek', value).then(() => { });
   }
 
+  clearCollection(variableName) {
+    this[variableName].clear()
+  }
+
   pushDataToOfflineDb(data) {
     console.log(data);
     this.toBeSavedWhenOnline.getItem('toBeSaved').then((item) => {
-      if (item && typeof (item) == 'object') {
-
-        // let localItem = [];
-        // Object.keys(item).map(function (key) { localItem.push(item[key]); });
-        // localItem.push(item);
-        // localItem.push(data);
-        // debugger;
-        // this.saveLocal('toBeSaved', 'toBeSavedWhenOnline', localItem);
+      if (item != null && item.constructor === Array) {
+        console.log(typeof (item));
+        let localItem: any = item;
+        localItem.push(data);
+        this.saveLocal('toBeSaved', 'toBeSavedWhenOnline', localItem);
       }
-
-      // }
-      // console.log(typeof (item));
-      //   let localItem: any = item;
-      //   localItem.push(data);
-      //   this.saveLocal('toBeSaved', 'toBeSavedWhenOnline', localItem);
-
-      this.saveLocal('toBeSaved', 'toBeSavedWhenOnline', data);
+      else if (item != null && typeof (item) === 'object') {
+        let localItem = [];
+        localItem.push(item);
+        localItem.push(data);
+        this.saveLocal('toBeSaved', 'toBeSavedWhenOnline', localItem);
+        debugger;
+      }
+      else
+        this.saveLocal('toBeSaved', 'toBeSavedWhenOnline', data);
     })
   }
 

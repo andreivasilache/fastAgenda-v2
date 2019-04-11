@@ -4,7 +4,6 @@ import { AuthService } from './auth.service';
 import { AngularFireAuth } from 'angularfire2/auth';
 import { Observable } from 'rxjs';
 import * as moment from "moment";
-import * as localForage from "localforage";
 
 import { OfflineDbService } from './offline-db.service';
 
@@ -16,6 +15,7 @@ export class DatabaseService {
   POSTuserTasksCollection;
   GETuserTasksCollection = new Observable<any>();
   userId;
+  checkConnectionInterval;
 
   thisWeekTasks: any = [];
 
@@ -33,11 +33,18 @@ export class DatabaseService {
         this.userId = userData.uid;
         this.getUserDataForThisWeek();
         subscriber.unsubscribe();
-        this.getLocalDBData();
       });
-      this.getLocalDBData();
+      this.offlineOpperations();
     }, 500)
   }
+
+  offlineOpperations() {
+    this.checkConnectionInterval = setInterval(() => { this.pushOfflineStoredDataWhenConnection() }, 1000)
+    this.getLocalDBData();
+    this.getNotDBSavedData();
+  }
+
+
   getLocalDBData() {
     this.offline.toDoWeek.getItem('toDoWeek', (err, value) => {
       if (value && this.thisWeekTags.length == 0) {
@@ -46,37 +53,49 @@ export class DatabaseService {
     });
   }
 
-  pushDataToUserCollection(Data) {
-    this.POSTuserTasksCollection.push(Data);
-    this.thisWeekTags.push(Data);
+  getNotDBSavedData() {
+    this.offline.toBeSavedWhenOnline.getItem('toBeSaved', (err, value) => {
+      let localValue: any = value;
+      if (value) {
+        if (typeof (localValue) === 'object') {
+          console.log('object')
+          this.thisWeekTasks.push(localValue);
+        } else {
+          console.log('vector')
+          localValue.forEach(element => { this.thisWeekTasks.push(element); console.log(element) });
+        }
 
-    if (this.offline.checkInternetConnection()) {
-      this.offline.pushDataToOfflineDb(Data);
-    }
-
-
-    //   this.offline.toDoWeek.getItem('toDoWeek').then((item) => {
-    //     console.log(item);
-    //     let localItem: any = item;
-    //     localItem.push(Data);
-    //     this.offline.toDoWeek.setItem('toDoWeek', localItem).then(() => {
-    //       console.log("Done!");
-    //     });
-    //   })
+      }
+    });
   }
 
-  refreshOfflineDB() {
-    localForage.removeItem('toDoWeek').then(() => {
-      console.log("removed!")
-      // this.toDoWeek.setItem('toDoWeek', this.thisWeekTasks).then(() => {
-      //   this.toDoWeek.getItem('toDoWeek', (err, value) => {
-      //     this.getLocalDBData();
-      //     this.extractTagsFromObject(value);
-      //     debugger;
+  pushDataOffline(Data) {
+    this.offline.pushDataToOfflineDb(Data);
+  }
 
-      //   });
-      // });
-    });
+  pushOfflineStoredDataWhenConnection() {
+    let i = 0;
+    if (this.offline.checkInternetConnection()) {
+      this.offline.toBeSavedWhenOnline.getItem('toBeSaved', (err, value) => {
+        let localValue: any = value;
+        if (value) {
+          if (localValue.constructor.name == "Object") {
+            this.POSTuserTasksCollection.push(value);
+            console.log("Added object")
+          }
+          else {
+            localValue.forEach(element => { this.POSTuserTasksCollection.push(element); i++; console.log("Added array element nr " + i) });
+          }
+          this.offline.clearCollection('toBeSavedWhenOnline');
+        }
+      });
+    }
+  }
+
+  pushDataToUserCollection(Data) {
+    this.POSTuserTasksCollection.push(Data);
+    this.thisWeekTasks.push(Data);
+    if (!this.offline.checkInternetConnection()) this.pushDataOffline(Data);
   }
 
   sendDataObjectWithProprietyToArray(obj, arr, propriety) {
@@ -114,10 +133,7 @@ export class DatabaseService {
       this.extractTagsFromObject(this.thisWeekTasks);
       this.groupObjBy(this.DBTasks, 'weekStartDate');
       this.sortSumarryByDate();
-
       this.offline.saveToDoWeekData(this.thisWeekTasks);
-
-      // this.offline.toDoWeek.setItem('toDoWeek', this.thisWeekTasks).then(() => { });
     });
   }
 
