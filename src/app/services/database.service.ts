@@ -4,7 +4,6 @@ import { AuthService } from './auth.service';
 import { AngularFireAuth } from 'angularfire2/auth';
 import { Observable } from 'rxjs';
 import * as moment from "moment";
-
 import { OfflineDbService } from './offline-db.service';
 
 
@@ -33,12 +32,12 @@ export class DatabaseService {
         this.getUserDataForThisWeek();
         subscriber.unsubscribe();
       });
+      this.checkConnectionInterval = setInterval(() => { this.pushOfflineStoredDataWhenConnection() }, 1000)
       this.offlineOpperations();
     }, 500)
   }
 
   offlineOpperations() {
-    this.checkConnectionInterval = setInterval(() => { this.pushOfflineStoredDataWhenConnection() }, 1000)
     this.getLocalDBData();
     this.getNotDBSavedData();
   }
@@ -83,7 +82,7 @@ export class DatabaseService {
             console.log("Added object")
           }
           else {
-            localValue.forEach(element => { this.POSTuserTasksCollection.push(element); i++; console.log("Added array element nr " + i) });
+            localValue.forEach(element => { this.POSTuserTasksCollection.push(element) });
           }
           this.offline.clearCollection('toBeSavedWhenOnline');
         }
@@ -170,6 +169,13 @@ export class DatabaseService {
   }
 
   deleteTask(id) {
-    this.db.object(`/weekly-tasks/${this.userId}/${id}`).remove();
+    // if (this.offline.checkInternetConnection()) this.db.object(`/weekly-tasks/${this.userId}/${id}`).remove();
+    // else this.offline.deleteOffline(id);
+    if (!this.checkConnectionInterval()) {
+      this.offline.deleteOffline(id);
+      this.offlineOpperations();
+    }
   }
+
+
 }

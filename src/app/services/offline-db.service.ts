@@ -56,7 +56,6 @@ export class OfflineDbService {
         localItem.push(item);
         localItem.push(data);
         this.saveLocal('toBeSaved', 'toBeSavedWhenOnline', localItem);
-        debugger;
       }
       else
         this.saveLocal('toBeSaved', 'toBeSavedWhenOnline', data);
@@ -67,9 +66,48 @@ export class OfflineDbService {
     this[variableName].setItem(localNameString, data).then((e) => { console.log("Data saved!") });
   }
 
-  // getDoToWeekData() {
-  //   // return this.toDoWeek.getItem('toDoWeek', (error) => console.log(error))
-  // }
+  deleteOffline(id) {
+    this.searchInLocalData('toDoWeek', 'toDoWeek', id);
+    this.searchInLocalData('toBeSavedWhenOnline', 'toBeSaved', id);
+  }
+
+  searchInLocalData(variableName, localForgeValue, idToBeDeleted) {
+    this[variableName].getItem(localForgeValue, (err, value) => {
+      if (value) {
+        if (value.constructor.name === "Object") {
+          if (value.id === idToBeDeleted) this.clearCollection(variableName);
+        } else {
+          let foundIndex = this.searchInArray(value, 'id', idToBeDeleted);
+          this.deleteFromLocalData(variableName, localForgeValue, foundIndex);
+        }
+      }
+    });
+  }
+
+  deleteFromLocalData(variableName, localForgeValue, localArrayIndex) {
+    this[variableName].getItem(localForgeValue, (err, value) => {
+      console.log(value);
+      if (value) {
+        value.splice(localArrayIndex, 1);
+        this.saveLocal(localForgeValue, variableName, value);
+        // console.log(value[localArrayIndex]);
+      }
+    });
+  };
+
+
+  searchInArray(array, propriety, proprietyValue) {
+    // let searchArray = array.filter(obj => obj[propriety] === proprietyValue)
+    let index;
+    for (let i = 0; i < array.length; i++) {
+      if (array[i][propriety] === proprietyValue) {
+        index = i;
+      }
+    }
+    return index;
+    // return searchArray.length != 0;
+  }
+
 
 
 }
