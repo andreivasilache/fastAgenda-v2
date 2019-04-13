@@ -12,11 +12,6 @@ import * as moment from "moment";
 })
 export class ThisWeekTasksComponent implements OnInit {
 
-  // tags = [
-  //   "School",
-  //   "Sport"
-  // ];
-
   newEventFormToggler = false;
   toggleCheckboxInput = false;
   tagFormValue = '';

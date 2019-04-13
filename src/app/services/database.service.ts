@@ -25,7 +25,6 @@ export class DatabaseService {
   tasksGroupedByWeek = [];
 
   constructor(public db: AngularFireDatabase, public auth: AuthService, public firebaseAuth: AngularFireAuth, private offline: OfflineDbService) {
-    // this.offline.getDoToWeekData();
     setTimeout(() => {
       let subscriber = firebaseAuth.authState.subscribe((userData) => {
         this.POSTuserTasksCollection = this.db.list(`/weekly-tasks/${userData.uid}`);
@@ -49,6 +48,7 @@ export class DatabaseService {
     this.offline.toDoWeek.getItem('toDoWeek', (err, value) => {
       if (value && this.thisWeekTags.length == 0) {
         this.thisWeekTasks = value;
+        this.extractTagsFromObject(this.thisWeekTasks);
       }
     });
   }
@@ -57,20 +57,19 @@ export class DatabaseService {
     this.offline.toBeSavedWhenOnline.getItem('toBeSaved', (err, value) => {
       let localValue: any = value;
       if (value) {
-        if (typeof (localValue) === 'object') {
-          console.log('object')
+        if (localValue.constructor.name == "Object") {
           this.thisWeekTasks.push(localValue);
         } else {
-          console.log('vector')
-          localValue.forEach(element => { this.thisWeekTasks.push(element); console.log(element) });
+          localValue.forEach(element => { this.thisWeekTasks.push(element); });
         }
-
+        this.extractTagsFromObject(this.thisWeekTasks);
       }
     });
   }
 
   pushDataOffline(Data) {
     this.offline.pushDataToOfflineDb(Data);
+    this.sortUniqueTags(this.thisWeekTags);
   }
 
   pushOfflineStoredDataWhenConnection() {
@@ -93,9 +92,10 @@ export class DatabaseService {
   }
 
   pushDataToUserCollection(Data) {
-    this.POSTuserTasksCollection.push(Data);
+    if (this.offline.checkInternetConnection()) {
+      this.POSTuserTasksCollection.push(Data);
+    } else this.pushDataOffline(Data)
     this.thisWeekTasks.push(Data);
-    if (!this.offline.checkInternetConnection()) this.pushDataOffline(Data);
   }
 
   sendDataObjectWithProprietyToArray(obj, arr, propriety) {
@@ -107,7 +107,7 @@ export class DatabaseService {
     }
   }
 
-  getUniqueArrayData(arrToBeFiltered) {
+  sortUniqueTags(arrToBeFiltered) {
     let unqiue = arrToBeFiltered.filter((v, i, a) => a.indexOf(v) === i);
     this.thisWeekTags = unqiue;
   }
@@ -133,7 +133,8 @@ export class DatabaseService {
       this.extractTagsFromObject(this.thisWeekTasks);
       this.groupObjBy(this.DBTasks, 'weekStartDate');
       this.sortSumarryByDate();
-      this.offline.saveToDoWeekData(this.thisWeekTasks);
+      this.offline.saveLocal('toDoWeek', 'toDoWeek', this.thisWeekTasks);
+      // this.offline.saveToDoWeekData(this.thisWeekTasks);
     });
   }
 
@@ -165,7 +166,7 @@ export class DatabaseService {
     for (let prop in object) {
       allTags.push(object[prop]['tag']);
     }
-    this.getUniqueArrayData(allTags);
+    this.sortUniqueTags(allTags);
   }
 
   deleteTask(id) {
