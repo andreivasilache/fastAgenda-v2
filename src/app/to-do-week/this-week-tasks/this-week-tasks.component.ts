@@ -4,6 +4,7 @@ import { DatabaseService } from 'src/app/services/database.service';
 import { MatDialog } from '@angular/material';
 import { MatDialogComponent } from 'src/app/mat-dialog/mat-dialog.component';
 import * as moment from "moment";
+import { OfflineDbService } from 'src/app/services/offline-db.service';
 
 @Component({
   selector: 'app-this-week-tasks',
@@ -21,7 +22,7 @@ export class ThisWeekTasksComponent implements OnInit {
   nextWeeks = [];
   selectedWeek = moment().startOf('week').add('d', 1).toISOString();
 
-  constructor(public db: DatabaseService, private dialog: MatDialog) {
+  constructor(public db: DatabaseService, private offlineDb: OfflineDbService, private dialog: MatDialog) {
     this.generateNextWeeks(7);
   }
 
@@ -115,20 +116,25 @@ export class ThisWeekTasksComponent implements OnInit {
       value.checkBoxQuantityRealized = 0;
       value.checkBoxQuantity = Number(value.checkBoxQuantity);
     }
+    if (!this.offlineDb.checkInternetConnection()) {
+      value.id = this.db.generateRandomId();
+      value.savedOffline = true;
+    }
+
 
     if (!this.elementIsInArray(this.db.thisWeekTags, value.tag)) this.db.thisWeekTags.push(value.tag);
     this.db.pushDataToUserCollection(value);
     this.newEventFormToggler = !this.newEventFormToggler;
   }
 
-  deleteTask(taskId) {
+  deleteTask(taskId, index) {
     const dialogRef = this.dialog.open(MatDialogComponent, {
       width: '350px',
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result == 'confirm')
-        this.db.deleteTask(taskId);
+        this.db.deleteTask(taskId, index);
     });
   }
 

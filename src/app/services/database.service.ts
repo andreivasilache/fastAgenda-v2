@@ -32,16 +32,25 @@ export class DatabaseService {
         this.getUserDataForThisWeek();
         subscriber.unsubscribe();
       });
-      this.checkConnectionInterval = setInterval(() => { this.pushOfflineStoredDataWhenConnection() }, 1000)
+      this.checkConnectionInterval = setInterval(() => {
+        if (this.offline.checkInternetConnection()) {
+          this.pushOfflineStoredDataWhenConnection();
+          this.deleteOfflineStoredDataWhenConnection();
+        }
+      }, 1000)
       this.offlineOpperations();
     }, 500)
   }
+
 
   offlineOpperations() {
     this.getLocalDBData();
     this.getNotDBSavedData();
   }
 
+  generateRandomId() {
+    return Math.random().toString(16).slice(2) + (new Date()).getTime() + Math.random().toString(16).slice(2);
+  }
 
   getLocalDBData() {
     this.offline.toDoWeek.getItem('toDoWeek', (err, value) => {
@@ -71,23 +80,35 @@ export class DatabaseService {
     this.sortUniqueTags(this.thisWeekTags);
   }
 
+  deleteOfflineStoredDataWhenConnection() {
+    this.offline.toBeDeletedWhenOffline.getItem('toBeDeletedWhenOffline', (err, value) => {
+      let localValue: any = value;
+      if (value) {
+        if (localValue.constructor.name == "Object") {
+          this.deleteTaskFromCollection(localValue.id);
+        } else {
+          localValue.forEach(element => this.deleteTaskFromCollection(element.id));
+        }
+        this.offline.clearCollection('toBeDeletedWhenOffline');
+      }
+    })
+  }
+
   pushOfflineStoredDataWhenConnection() {
     let i = 0;
-    if (this.offline.checkInternetConnection()) {
-      this.offline.toBeSavedWhenOnline.getItem('toBeSaved', (err, value) => {
-        let localValue: any = value;
-        if (value) {
-          if (localValue.constructor.name == "Object") {
-            this.POSTuserTasksCollection.push(value);
-            console.log("Added object")
-          }
-          else {
-            localValue.forEach(element => { this.POSTuserTasksCollection.push(element) });
-          }
-          this.offline.clearCollection('toBeSavedWhenOnline');
+    this.offline.toBeSavedWhenOnline.getItem('toBeSaved', (err, value) => {
+      let localValue: any = value;
+      if (value) {
+        if (localValue.constructor.name == "Object") {
+          this.POSTuserTasksCollection.push(value);
+          console.log("Added object")
         }
-      });
-    }
+        else {
+          localValue.forEach(element => { this.POSTuserTasksCollection.push(element) });
+        }
+        this.offline.clearCollection('toBeSavedWhenOnline');
+      }
+    });
   }
 
   pushDataToUserCollection(Data) {
@@ -168,13 +189,25 @@ export class DatabaseService {
     this.sortUniqueTags(allTags);
   }
 
-  deleteTask(id) {
-    // if (this.offline.checkInternetConnection()) this.db.object(`/weekly-tasks/${this.userId}/${id}`).remove();
-    // else this.offline.deleteOffline(id);
-    if (!this.checkConnectionInterval()) {
+  deleteTaskFromCollection(id) {
+    this.db.object(`/weekly-tasks/${this.userId}/${id}`).remove()
+  }
+
+  deleteTask(id, index) {
+    console.log("index" + index);
+    if (!this.offline.checkInternetConnection()) {
       this.offline.deleteOffline(id);
-      this.offlineOpperations();
+      this.deleteFromThisWeekTasksByIndex(index);
+      setTimeout(() => {
+        this.offlineOpperations();
+      }, 2000);
+    } else {
+      this.db.object(`/weekly-tasks/${this.userId}/${id}`).remove()
     }
+  }
+
+  deleteFromThisWeekTasksByIndex(index) {
+    this.thisWeekTasks.splice(index, 1);
   }
 
 
