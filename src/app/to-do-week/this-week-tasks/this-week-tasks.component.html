@@ -14,7 +14,7 @@
         (mouseenter)="this.db.emptyArrayForTextHovering[index] = true"
         (mouseleave)="this.db.emptyArrayForTextHovering[index] = false">
 
-        <button (click)="deleteTask(task.id)" class="btn btn-outline-dark"
+        <button (click)="deleteTask(task.id,index)" class="btn btn-outline-dark"
           [ngClass]="( this.db.emptyArrayForTextHovering[index]  ? 'todo__button--delete--show' : 'todo__button--delete--hide')"><i
             class="material-icons todo__button--delete--content"> delete_forever </i></button>
 

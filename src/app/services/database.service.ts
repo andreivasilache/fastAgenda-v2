@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { AngularFireAuth } from 'angularfire2/auth';
 import { Observable } from 'rxjs';
 import * as moment from "moment";
+import { OfflineDbService } from './offline-db.service';
 
 
 @Injectable({
@@ -13,14 +14,16 @@ export class DatabaseService {
   POSTuserTasksCollection;
   GETuserTasksCollection = new Observable<any>();
   userId;
+  checkConnectionInterval;
 
-  thisWeekTasks = [];
+  thisWeekTasks: any = [];
+
   DBTasks = [];
   thisWeekTags = [];
   emptyArrayForTextHovering = [];
   tasksGroupedByWeek = [];
 
-  constructor(public db: AngularFireDatabase, public auth: AuthService, public firebaseAuth: AngularFireAuth) {
+  constructor(public db: AngularFireDatabase, public auth: AuthService, public firebaseAuth: AngularFireAuth, private offline: OfflineDbService) {
     setTimeout(() => {
       let subscriber = firebaseAuth.authState.subscribe((userData) => {
         this.POSTuserTasksCollection = this.db.list(`/weekly-tasks/${userData.uid}`);
@@ -29,11 +32,90 @@ export class DatabaseService {
         this.getUserDataForThisWeek();
         subscriber.unsubscribe();
       });
+      this.checkConnectionInterval = setInterval(() => {
+        if (this.offline.checkInternetConnection()) {
+          this.pushOfflineStoredDataWhenConnection();
+          this.deleteOfflineStoredDataWhenConnection();
+        }
+      }, 1000)
+      this.offlineOpperations();
     }, 500)
   }
 
+
+  offlineOpperations() {
+    this.getLocalDBData();
+    this.getNotDBSavedData();
+  }
+
+  generateRandomId() {
+    return Math.random().toString(16).slice(2) + (new Date()).getTime() + Math.random().toString(16).slice(2);
+  }
+
+  getLocalDBData() {
+    this.offline.toDoWeek.getItem('toDoWeek', (err, value) => {
+      if (value && this.thisWeekTags.length == 0) {
+        this.thisWeekTasks = value;
+        this.extractTagsFromObject(this.thisWeekTasks);
+      }
+    });
+  }
+
+  getNotDBSavedData() {
+    this.offline.toBeSavedWhenOnline.getItem('toBeSaved', (err, value) => {
+      let localValue: any = value;
+      if (value) {
+        if (localValue.constructor.name == "Object") {
+          this.thisWeekTasks.push(localValue);
+        } else {
+          localValue.forEach(element => { this.thisWeekTasks.push(element); });
+        }
+        this.extractTagsFromObject(this.thisWeekTasks);
+      }
+    });
+  }
+
+  pushDataOffline(Data) {
+    this.offline.pushDataToOfflineDb(Data);
+    this.sortUniqueTags(this.thisWeekTags);
+  }
+
+  deleteOfflineStoredDataWhenConnection() {
+    this.offline.toBeDeletedWhenOffline.getItem('toBeDeletedWhenOffline', (err, value) => {
+      let localValue: any = value;
+      if (value) {
+        if (localValue.constructor.name == "Object") {
+          this.deleteTaskFromCollection(localValue.id);
+        } else {
+          localValue.forEach(element => this.deleteTaskFromCollection(element.id));
+        }
+        this.offline.clearCollection('toBeDeletedWhenOffline');
+      }
+    })
+  }
+
+  pushOfflineStoredDataWhenConnection() {
+    let i = 0;
+    this.offline.toBeSavedWhenOnline.getItem('toBeSaved', (err, value) => {
+      let localValue: any = value;
+      if (value) {
+        if (localValue.constructor.name == "Object") {
+          this.POSTuserTasksCollection.push(value);
+          console.log("Added object")
+        }
+        else {
+          localValue.forEach(element => { this.POSTuserTasksCollection.push(element) });
+        }
+        this.offline.clearCollection('toBeSavedWhenOnline');
+      }
+    });
+  }
+
   pushDataToUserCollection(Data) {
-    this.POSTuserTasksCollection.push(Data);
+    if (this.offline.checkInternetConnection()) {
+      this.POSTuserTasksCollection.push(Data);
+    } else this.pushDataOffline(Data)
+    this.thisWeekTasks.push(Data);
   }
 
   sendDataObjectWithProprietyToArray(obj, arr, propriety) {
@@ -45,7 +127,7 @@ export class DatabaseService {
     }
   }
 
-  getUniqueArrayData(arrToBeFiltered) {
+  sortUniqueTags(arrToBeFiltered) {
     let unqiue = arrToBeFiltered.filter((v, i, a) => a.indexOf(v) === i);
     this.thisWeekTags = unqiue;
   }
@@ -71,6 +153,8 @@ export class DatabaseService {
       this.extractTagsFromObject(this.thisWeekTasks);
       this.groupObjBy(this.DBTasks, 'weekStartDate');
       this.sortSumarryByDate();
+      this.offline.saveLocal('toDoWeek', 'toDoWeek', this.thisWeekTasks);
+      // this.offline.saveToDoWeekData(this.thisWeekTasks);
     });
   }
 
@@ -103,10 +187,27 @@ export class DatabaseService {
     for (let prop in object) {
       allTags.push(object[prop]['tag']);
     }
-    this.getUniqueArrayData(allTags);
+    this.sortUniqueTags(allTags);
   }
 
-  deleteTask(id) {
-    this.db.object(`/weekly-tasks/${this.userId}/${id}`).remove();
+  deleteTaskFromCollection(id) {
+    this.db.object(`/weekly-tasks/${this.userId}/${id}`).remove()
   }
+
+  deleteTask(id, index) {
+    if (!this.offline.checkInternetConnection()) {
+      this.offline.deleteOffline(id).then(() => {
+        this.deleteFromThisWeekTasksByIndex(index);
+        this.extractTagsFromObject(this.thisWeekTasks);
+      });
+    } else {
+      this.db.object(`/weekly-tasks/${this.userId}/${id}`).remove()
+    }
+  }
+
+  deleteFromThisWeekTasksByIndex(index) {
+    this.thisWeekTasks.splice(index, 1);
+  }
+
+
 }
