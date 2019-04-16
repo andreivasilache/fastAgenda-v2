@@ -14,11 +14,7 @@
         "https://fonts.googleapis.com/css?family=Roboto",
         "https://use.fontawesome.com/releases/v5.7.0/css/all.css",
         "https://fonts.googleapis.com/icon?family=Material+Icons",
-        "https://fonts.googleapis.com/css?family=Roboto:300,400,500",
-        "https://fastagenda-1cdc8.firebaseio.com/",
-        "/toDoWeek",
-        "/toDoWeek/",
-        "/toDoWeek/"
+        "https://fonts.googleapis.com/css?family=Roboto:300,400,500"
       ]
     }
   }, {
@@ -34,9 +30,7 @@
   }],
   "dataGroups": [{
     "name": "This",
-    "urls": [
-      "https://fastagenda-1cdc8.firebaseio.com"
-    ],
+    "urls": [],
     "cacheConfig": {
       "maxSize": 100,
       "maxAge": "24h",
