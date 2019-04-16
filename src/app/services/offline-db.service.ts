@@ -11,8 +11,6 @@ export class OfflineDbService {
   toBeSavedWhenOnline = localForage.createInstance({ name: 'toBeSaved' });
   toBeDeletedWhenOffline = localForage.createInstance({ name: 'toBeDeleted' });
 
-
-
   constructor() {
     localForage.config({
       driver: localForage.LOCALSTORAGE, // Force WebSQL; same as using setDriver()
@@ -33,9 +31,12 @@ export class OfflineDbService {
       return value;
     });
   }
+  isObject(item) {
+    return item.constructor.name === "Object";
+  }
 
-  saveToDoWeekData(value) {
-    this.toDoWeek.setItem('toDoWeek', value).then(() => { });
+  isArray(item) {
+    return item.constructor === Array;
   }
 
   clearCollection(variableName) {
@@ -43,7 +44,6 @@ export class OfflineDbService {
   }
 
   pushDataToOfflineDb(data) {
-    console.log(data);
     this.toBeSavedWhenOnline.getItem('toBeSaved').then((item) => {
       if (item != null && item.constructor === Array) {
         let localItem: any = item;
@@ -61,26 +61,37 @@ export class OfflineDbService {
     })
   }
 
-
   saveLocal(localNameString, variableName, data) {
     this[variableName].setItem(localNameString, data).then((e) => { console.log("Data saved!"); });
   }
 
-  deleteOffline(id) {
-    /*
-      Sort when to get data from localdata or when to get data from toBeSavedWhenOnline
-    */
-    this.toDoWeek.getItem('toDoWeek', (err, value) => {
-
-    });
-    this.searchInLocalData('toDoWeek', 'toDoWeek', id);
-    this.searchInLocalDataToBeSaved('toBeSavedWhenOnline', 'toBeSaved', id);
+  async deleteOffline(id) {
+    await this.checkIfIsInLocalStore('toDoWeek', 'toDoWeek', id).then((isHere) => {
+      if (isHere) this.deleteFromLocalStore('toDoWeek', 'toDoWeek', id);
+    })
+    await this.checkIfIsInLocalStore('toBeSavedWhenOnline', 'toBeSaved', id).then((isHere) => {
+      if (isHere) this.searchInLocalDataToBeSaved('toBeSavedWhenOnline', 'toBeSaved', id);
+    })
   }
 
-  searchInLocalData(variableName, localForgeValue, idToBeDeleted) {
+  async getLocalForgeData(variableName, localForgeString) {
+    return await this[variableName].getItem(localForgeString);
+  }
+
+  async checkIfIsInLocalStore(variableName, localForgeString, idToBeFound) {
+    return await this.getLocalForgeData(variableName, localForgeString).then((value) => {
+      if (value && value.constructor.name === "Object")
+        if (value.id === idToBeFound) return true;
+      if (value && value.constructor === Array)
+        if (typeof (this.returnLocalIndex(value, 'id', idToBeFound)) === 'number') return true;
+    });
+  }
+
+
+  deleteFromLocalStore(variableName, localForgeValue, idToBeDeleted) {
     this.toDoWeek.getItem(localForgeValue, (err, value) => {
       if (value) {
-        if (value.constructor.name === "Object") {
+        if (this.isObject(value)) {
           let gottenData: any = value;
           if (gottenData.id === idToBeDeleted) {
             this.pushDataToBeDeletedLocal(value);
@@ -93,6 +104,7 @@ export class OfflineDbService {
       }
     });
   }
+
 
   searchInLocalDataToBeSaved(variableName, localForgeValue, idToBeDeleted) {
     this.toBeSavedWhenOnline.getItem(localForgeValue, (err, value) => {
@@ -110,33 +122,11 @@ export class OfflineDbService {
     this[variableName].getItem(localForgeValue, (err, value) => {
       if (value) {
         let deleted = value.splice(localArrayIndex, 1);
-
         this.saveLocal(localForgeValue, variableName, value);
         if (variableName != 'toBeSavedWhenOnline') this.pushDataToBeDeletedLocal(deleted);
       }
     });
   };
-
-
-
-  // searchInLocalData(variableName, localForgeValue, idToBeDeleted) {
-  //   this[variableName].getItem(localForgeValue, (err, value) => {
-  //     if (value) {
-  //       if (value.constructor.name === "Object") {
-  //         if (value.id === idToBeDeleted) {
-  //           this.pushDataToBeDeletedLocal(value);
-  //           this.clearCollection(variableName);
-  //         };
-  //       } else {
-  //         let foundIndex = this.returnLocalIndex(value, 'id', idToBeDeleted);
-  //         this.deleteFromLocalData(variableName, localForgeValue, foundIndex);
-  //       }
-  //     }
-  //   });
-  // }
-
-
-
   pushDataToBeDeletedLocal(deletedElement) {
     this.toBeDeletedWhenOffline.getItem('toBeDeletedWhenOffline', (err, toBeDeletedValue) => {
       if (toBeDeletedValue) {
@@ -158,16 +148,17 @@ export class OfflineDbService {
 
 
   returnLocalIndex(array, propriety, proprietyValue) {
-    let index;
-    for (let i = 0; i < array.length; i++) {
-      if (array[i][propriety] === proprietyValue) {
-        index = i;
+    let localArray: any = array
+    if (localArray.constructor === Array) {
+      for (let i = 0; i < array.length; i++) {
+        if (array[i][propriety] === proprietyValue) {
+          return i;
+        }
       }
+    } else {
+      return undefined;
     }
-    return index;
+
   }
-
-
-
 }
 

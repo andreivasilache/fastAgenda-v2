@@ -194,13 +194,11 @@ export class DatabaseService {
   }
 
   deleteTask(id, index) {
-    console.log("index" + index);
     if (!this.offline.checkInternetConnection()) {
-      this.offline.deleteOffline(id);
-      this.deleteFromThisWeekTasksByIndex(index);
-      setTimeout(() => {
-        this.offlineOpperations();
-      }, 2000);
+      this.offline.deleteOffline(id).then(() => {
+        this.deleteFromThisWeekTasksByIndex(index);
+        this.extractTagsFromObject(this.thisWeekTasks);
+      });
     } else {
       this.db.object(`/weekly-tasks/${this.userId}/${id}`).remove()
     }
