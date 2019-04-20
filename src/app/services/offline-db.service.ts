@@ -10,6 +10,7 @@ export class OfflineDbService {
   toDoWeek = localForage.createInstance({ name: 'toDoWeek' });
   toBeSavedWhenOnline = localForage.createInstance({ name: 'toBeSaved' });
   toBeDeletedWhenOffline = localForage.createInstance({ name: 'toBeDeleted' });
+  offlineUser = localForage.createInstance({ name: 'offlineUser' });
 
   constructor() {
     localForage.config({

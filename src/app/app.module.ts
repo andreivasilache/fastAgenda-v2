@@ -20,6 +20,7 @@ import { SummaryComponent } from './to-do-week/summary/summary.component';
 import { LoginErrorComponent } from './page-error/login-error/login-error.component';
 import { ServiceWorkerModule } from '@angular/service-worker';
 import { environment } from '../environments/environment';
+import { UpdateLogComponent } from './update-log/update-log.component';
 
 @NgModule({
   declarations: [
@@ -31,6 +32,7 @@ import { environment } from '../environments/environment';
     ThisWeekTasksComponent,
     SummaryComponent,
     LoginErrorComponent,
+    UpdateLogComponent,
   ],
   imports: [
     FormsModule,
