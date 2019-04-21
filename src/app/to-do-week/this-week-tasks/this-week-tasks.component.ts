@@ -77,6 +77,7 @@ export class ThisWeekTasksComponent implements OnInit {
     let wasFound = array.filter((arrElement) => arrElement == element);
     return wasFound.length != 0 ? true : false;
   }
+
   toggleCheckBox(elementId, actualQuantity, isChecked) {
     let incraseOrDecraseQuantity = isChecked ? actualQuantity - 1 : actualQuantity + 1;
     this.db.updateDBCollectionCheckbox(elementId, incraseOrDecraseQuantity);
@@ -113,7 +114,6 @@ export class ThisWeekTasksComponent implements OnInit {
     value.taskRealized = false;
     let startOfThisWeek = this.startOfWeekIso();
     let isThisWeek = value.selectedWeekForm === startOfThisWeek ? true : false;
-
 
     value.weekStartDate = isThisWeek ? startOfThisWeek : moment(value.selectedWeekForm).toISOString();
     value.weekEndDate = isThisWeek ? this.endOfWeekIso() : moment(value.selectedWeekForm).endOf('week').toISOString();

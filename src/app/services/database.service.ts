@@ -76,7 +76,7 @@ export class DatabaseService {
   }
 
   pushDataOffline(Data) {
-    this.offline.pushDataToOfflineDb(Data);
+    this.offline.pushDataToOfflineDb('toBeSaved', 'toBeSavedWhenOnline', Data);
     this.sortUniqueTags(this.thisWeekTags);
   }
 
@@ -137,7 +137,11 @@ export class DatabaseService {
   }
 
   updateDBCollectionTaskStatusToggle(id, status) {
-    this.db.object(`/weekly-tasks/${this.userId}/${id}`).update({ taskRealized: !status });
+    if (this.offline.checkInternetConnection()) {
+      this.db.object(`/weekly-tasks/${this.userId}/${id}`).update({ taskRealized: !status });
+    } else {
+      this.offline.saveUpdateInLocalStorage(id, !status);
+    }
   }
 
   hideAllDeleteButtons(arr) {

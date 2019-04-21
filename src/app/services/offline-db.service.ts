@@ -10,7 +10,7 @@ export class OfflineDbService {
   toDoWeek = localForage.createInstance({ name: 'toDoWeek' });
   toBeSavedWhenOnline = localForage.createInstance({ name: 'toBeSaved' });
   toBeDeletedWhenOffline = localForage.createInstance({ name: 'toBeDeleted' });
-  offlineUser = localForage.createInstance({ name: 'offlineUser' });
+  toBeUpdatedStatusWhenOffline = localForage.createInstance({ name: 'toBeUpdatedStatus' });
 
   constructor() {
     localForage.config({
@@ -44,21 +44,21 @@ export class OfflineDbService {
     this[variableName].clear()
   }
 
-  pushDataToOfflineDb(data) {
-    this.toBeSavedWhenOnline.getItem('toBeSaved').then((item) => {
+  pushDataToOfflineDb(variableLocalForgeName, variableName, data) {
+    this[variableName].getItem(variableLocalForgeName).then((item) => {
       if (item != null && item.constructor === Array) {
         let localItem: any = item;
         localItem.push(data);
-        this.saveLocal('toBeSaved', 'toBeSavedWhenOnline', localItem);
+        this.saveLocal(variableLocalForgeName, variableName, localItem);
       }
       else if (item != null && typeof (item) === 'object') {
         let localItem = [];
         localItem.push(item);
         localItem.push(data);
-        this.saveLocal('toBeSaved', 'toBeSavedWhenOnline', localItem);
+        this.saveLocal(variableLocalForgeName, variableName, localItem);
       }
       else
-        this.saveLocal('toBeSaved', 'toBeSavedWhenOnline', data);
+        this.saveLocal(variableLocalForgeName, variableName, data);
     })
   }
 
@@ -119,6 +119,7 @@ export class OfflineDbService {
       }
     });
   }
+
   deleteFromLocalData(variableName, localForgeValue, localArrayIndex) {
     this[variableName].getItem(localForgeValue, (err, value) => {
       if (value) {
@@ -128,6 +129,7 @@ export class OfflineDbService {
       }
     });
   };
+
   pushDataToBeDeletedLocal(deletedElement) {
     this.toBeDeletedWhenOffline.getItem('toBeDeletedWhenOffline', (err, toBeDeletedValue) => {
       if (toBeDeletedValue) {
@@ -159,7 +161,30 @@ export class OfflineDbService {
     } else {
       return undefined;
     }
+  }
 
+
+  saveUpdateInLocalStorage(idOfTask, newData) {
+    this.checkIfIsInLocalStore('toBeUpdatedStatusWhenOffline', 'toBeUpdatedStatus', idOfTask).then((isHere) => {
+      if (isHere) {
+        this.getLocalForgeData('toBeUpdatedStatusWhenOffline', 'toBeUpdatedStatus').then((data) => {
+          if (this.isArray(data)) {
+            let localArray = data;
+            localArray[this.returnLocalIndex(data, 'id', idOfTask)].status = newData;
+            this.saveLocal('toBeUpdatedStatus', 'toBeUpdatedStatusWhenOffline', localArray);
+          }
+          if (this.isObject(data)) {
+            data.status = newData;
+            this.saveLocal('toBeUpdatedStatus', 'toBeUpdatedStatusWhenOffline', data);
+          }
+        })
+      } else {
+        this.pushDataToOfflineDb('toBeUpdatedStatus', 'toBeUpdatedStatusWhenOffline', {
+          id: idOfTask,
+          status: newData
+        });
+      }
+    });
   }
 }
 
