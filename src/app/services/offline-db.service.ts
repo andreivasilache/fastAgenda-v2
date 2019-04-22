@@ -9,8 +9,8 @@ import * as localForage from "localforage";
 export class OfflineDbService {
   toDoWeek = localForage.createInstance({ name: 'toDoWeek' });
   toBeSavedWhenOnline = localForage.createInstance({ name: 'toBeSaved' });
-  toBeDeletedWhenOffline = localForage.createInstance({ name: 'toBeDeleted' });
-  toBeUpdatedStatusWhenOffline = localForage.createInstance({ name: 'toBeUpdatedStatus' });
+  toBeDeletedWhenOnline = localForage.createInstance({ name: 'toBeDeleted' });
+  toBeUpdatedStatusWhenOnline = localForage.createInstance({ name: 'toBeUpdatedStatus' });
 
   constructor() {
     localForage.config({
@@ -73,6 +73,25 @@ export class OfflineDbService {
     await this.checkIfIsInLocalStore('toBeSavedWhenOnline', 'toBeSaved', id).then((isHere) => {
       if (isHere) this.searchInLocalDataToBeSaved('toBeSavedWhenOnline', 'toBeSaved', id);
     })
+    await this.checkIfIsInLocalStore('toBeUpdatedStatusWhenOnline', 'toBeUpdatedStatus', id).then(isHere => {
+      if (isHere) {
+        this.deleteFromLocalDBById('toBeUpdatedStatusWhenOnline', 'toBeUpdatedStatus', id);
+      }
+    })
+  }
+
+  deleteFromLocalDBById(variableName, variableNameString, id) {
+    this[variableName].getItem(variableNameString, (err, value) => {
+      if (this.isArray(value)) {
+        let localArray: any = value;
+        let localIndex = this.returnLocalIndex(value, 'id', id);
+        localArray.splice(localIndex, 1);
+        this.saveLocal(variableNameString, variableName, localArray);
+      }
+      if (this.isObject(value)) {
+        this.clearCollection(variableName);
+      }
+    });
   }
 
   async getLocalForgeData(variableName, localForgeString) {
@@ -90,7 +109,7 @@ export class OfflineDbService {
 
 
   deleteFromLocalStore(variableName, localForgeValue, idToBeDeleted) {
-    this.toDoWeek.getItem(localForgeValue, (err, value) => {
+    this[variableName].getItem(localForgeValue, (err, value) => {
       if (value) {
         if (this.isObject(value)) {
           let gottenData: any = value;
@@ -121,30 +140,31 @@ export class OfflineDbService {
   }
 
   deleteFromLocalData(variableName, localForgeValue, localArrayIndex) {
+    console.log(variableName);
     this[variableName].getItem(localForgeValue, (err, value) => {
       if (value) {
         let deleted = value.splice(localArrayIndex, 1);
         this.saveLocal(localForgeValue, variableName, value);
-        if (variableName != 'toBeSavedWhenOnline') this.pushDataToBeDeletedLocal(deleted);
+        if (variableName === "toDoWeek") this.pushDataToBeDeletedLocal(deleted);
       }
     });
   };
 
   pushDataToBeDeletedLocal(deletedElement) {
-    this.toBeDeletedWhenOffline.getItem('toBeDeletedWhenOffline', (err, toBeDeletedValue) => {
+    this.toBeDeletedWhenOnline.getItem('toBeDeletedWhenOnline', (err, toBeDeletedValue) => {
       if (toBeDeletedValue) {
         let localToBeDeleted: any = toBeDeletedValue;
         if (localToBeDeleted.constructor.name === "Object") {
           let localArray = [];
           localArray.push(localToBeDeleted);
           localArray.push(deletedElement);
-          this.saveLocal('toBeDeletedWhenOffline', 'toBeDeletedWhenOffline', localArray);
+          this.saveLocal('toBeDeletedWhenOnline', 'toBeDeletedWhenOnline', localArray);
         } else {
           localToBeDeleted.push(deletedElement[0]);
-          this.saveLocal('toBeDeletedWhenOffline', 'toBeDeletedWhenOffline', localToBeDeleted);
+          this.saveLocal('toBeDeletedWhenOnline', 'toBeDeletedWhenOnline', localToBeDeleted);
         }
       } else {
-        this.saveLocal('toBeDeletedWhenOffline', 'toBeDeletedWhenOffline', deletedElement);
+        this.saveLocal('toBeDeletedWhenOnline', 'toBeDeletedWhenOnline', deletedElement);
       }
     })
   }
@@ -165,21 +185,26 @@ export class OfflineDbService {
 
 
   saveUpdateInLocalStorage(idOfTask, newData) {
-    this.checkIfIsInLocalStore('toBeUpdatedStatusWhenOffline', 'toBeUpdatedStatus', idOfTask).then((isHere) => {
+    this.checkIfIsInLocalStore('toBeUpdatedStatusWhenOnline', 'toBeUpdatedStatus', idOfTask).then((isHere) => {
       if (isHere) {
-        this.getLocalForgeData('toBeUpdatedStatusWhenOffline', 'toBeUpdatedStatus').then((data) => {
+        this.getLocalForgeData('toBeUpdatedStatusWhenOnline', 'toBeUpdatedStatus').then((data) => {
           if (this.isArray(data)) {
             let localArray = data;
-            localArray[this.returnLocalIndex(data, 'id', idOfTask)].status = newData;
-            this.saveLocal('toBeUpdatedStatus', 'toBeUpdatedStatusWhenOffline', localArray);
+            let indexInArray = this.returnLocalIndex(data, 'id', idOfTask);
+            if (localArray[indexInArray].haveCheckBox) {
+
+            } else {
+              localArray[indexInArray].status = newData;
+            }
+            this.saveLocal('toBeUpdatedStatus', 'toBeUpdatedStatusWhenOnline', localArray);
           }
           if (this.isObject(data)) {
             data.status = newData;
-            this.saveLocal('toBeUpdatedStatus', 'toBeUpdatedStatusWhenOffline', data);
+            this.saveLocal('toBeUpdatedStatus', 'toBeUpdatedStatusWhenOnline', data);
           }
         })
       } else {
-        this.pushDataToOfflineDb('toBeUpdatedStatus', 'toBeUpdatedStatusWhenOffline', {
+        this.pushDataToOfflineDb('toBeUpdatedStatus', 'toBeUpdatedStatusWhenOnline', {
           id: idOfTask,
           status: newData
         });

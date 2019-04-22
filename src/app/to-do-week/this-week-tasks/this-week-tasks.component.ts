@@ -78,15 +78,15 @@ export class ThisWeekTasksComponent implements OnInit {
     return wasFound.length != 0 ? true : false;
   }
 
-  toggleCheckBox(elementId, actualQuantity, isChecked) {
+  toggleCheckBox(elementId, actualQuantity, isChecked, index) {
     let incraseOrDecraseQuantity = isChecked ? actualQuantity - 1 : actualQuantity + 1;
-    this.db.updateDBCollectionCheckbox(elementId, incraseOrDecraseQuantity);
+    this.db.updateDBCollectionCheckbox(elementId, incraseOrDecraseQuantity, index);
   }
 
-  toggleTaskStatus(elementId, currentStatus, haveCheckBox) {
+  toggleTaskStatus(elementId, currentStatus, haveCheckBox, localIndex) {
     if (!haveCheckBox) {
       if (currentStatus === false) {
-        this.db.updateDBCollectionTaskStatusToggle(elementId, currentStatus);
+        this.db.updateDBCollectionTaskStatusToggle(elementId, currentStatus, localIndex);
       } else {
         const dialogRef = this.dialog.open(MatDialogComponent, {
           width: '350px',
@@ -94,11 +94,12 @@ export class ThisWeekTasksComponent implements OnInit {
 
         dialogRef.afterClosed().subscribe(result => {
           if (result == 'confirm')
-            this.db.updateDBCollectionTaskStatusToggle(elementId, currentStatus);
+            this.db.updateDBCollectionTaskStatusToggle(elementId, currentStatus, localIndex);
         });
       }
     }
   }
+
 
   toggleSortByTag(tag) {
     if (this.clickedTag === tag) this.clickedTag = undefined;

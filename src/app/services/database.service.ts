@@ -81,7 +81,7 @@ export class DatabaseService {
   }
 
   deleteOfflineStoredDataWhenConnection() {
-    this.offline.toBeDeletedWhenOffline.getItem('toBeDeletedWhenOffline', (err, value) => {
+    this.offline.toBeDeletedWhenOnline.getItem('toBeDeletedWhenOnline', (err, value) => {
       let localValue: any = value;
       if (value) {
         if (localValue.constructor.name == "Object") {
@@ -89,7 +89,7 @@ export class DatabaseService {
         } else {
           localValue.forEach(element => this.deleteTaskFromCollection(element.id));
         }
-        this.offline.clearCollection('toBeDeletedWhenOffline');
+        this.offline.clearCollection('toBeDeletedWhenOnline');
       }
     })
   }
@@ -132,15 +132,17 @@ export class DatabaseService {
     this.thisWeekTags = unqiue;
   }
 
-  updateDBCollectionCheckbox(id, newContent) {
+  updateDBCollectionCheckbox(id, newContent, index) {
     this.db.object(`/weekly-tasks/${this.userId}/${id}`).update({ checkBoxQuantityRealized: newContent });
+    this.updateLocalArrayStatus(index, newContent, true);
   }
 
-  updateDBCollectionTaskStatusToggle(id, status) {
+  updateDBCollectionTaskStatusToggle(id, status, index) {
     if (this.offline.checkInternetConnection()) {
       this.db.object(`/weekly-tasks/${this.userId}/${id}`).update({ taskRealized: !status });
     } else {
       this.offline.saveUpdateInLocalStorage(id, !status);
+      this.updateLocalArrayStatus(index, status, false);
     }
   }
 
@@ -211,6 +213,14 @@ export class DatabaseService {
 
   deleteFromThisWeekTasksByIndex(index) {
     this.thisWeekTasks.splice(index, 1);
+  }
+
+  updateLocalArrayStatus(indexOfArray, status, haveCheckBox) {
+    if (haveCheckBox) {
+      this.thisWeekTasks[indexOfArray].checkBoxQuantityRealized = status;
+    } else {
+      this.thisWeekTasks[indexOfArray].taskRealized = !status;
+    }
   }
 
 

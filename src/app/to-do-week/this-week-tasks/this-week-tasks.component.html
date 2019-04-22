@@ -22,14 +22,14 @@
 
         <p class="todo__content ml-2 mr-1"
           [ngClass]="( (task.checkBoxQuantity == task.checkBoxQuantityRealized && task.haveCheckBox) ||  task.taskRealized && !task.haveCheckBox ) ? 'todo__content--completed' : ''"
-          (click)="toggleTaskStatus(task.id,task.taskRealized,task.haveCheckBox)">
+          (click)="toggleTaskStatus(task.id,task.taskRealized,task.haveCheckBox,index)">
           {{ task.taskContent }}
           <span *ngIf="task.haveCheckBox" class="todo__content">
             ({{ task.checkBoxStandard }}
             <button
               [ngClass]="(checkBoxIndex < task.checkBoxQuantityRealized) ? 'todo__checkBox--filled' : 'todo__checkBox--unfilled'"
               *ngFor="let checkbox of createLenghtArray(task.checkBoxQuantity);let checkBoxIndex = index"
-              (click)="toggleCheckBox(task.id,task.checkBoxQuantityRealized,checkBoxIndex < task.checkBoxQuantityRealized)">
+              (click)="toggleCheckBox(task.id,task.checkBoxQuantityRealized,checkBoxIndex < task.checkBoxQuantityRealized,index)">
             </button>)
           </span>
         </p>
