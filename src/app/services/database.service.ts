@@ -32,10 +32,12 @@ export class DatabaseService {
         this.getUserDataForThisWeek();
         subscriber.unsubscribe();
       });
+      let number = 0;
       this.checkConnectionInterval = setInterval(() => {
         if (this.offline.checkInternetConnection()) {
           this.pushOfflineStoredDataWhenConnection();
           this.deleteOfflineStoredDataWhenConnection();
+          number === 1 ? clearInterval(this.checkConnectionInterval) : number++;
         }
       }, 1000)
       this.offlineOpperations();
@@ -46,6 +48,7 @@ export class DatabaseService {
   offlineOpperations() {
     this.getLocalDBData();
     this.getNotDBSavedData();
+
   }
 
   generateRandomId() {
@@ -60,6 +63,12 @@ export class DatabaseService {
       }
     });
   }
+
+  //
+  //      APPLAY CHANGES FROM 'TO BE UPDATED' to local data!
+  //      send data updated from localStoareTodb
+  //
+
 
   getNotDBSavedData() {
     this.offline.toBeSavedWhenOnline.getItem('toBeSaved', (err, value) => {
@@ -100,16 +109,36 @@ export class DatabaseService {
       let localValue: any = value;
       if (value) {
         if (localValue.constructor.name == "Object") {
-          this.POSTuserTasksCollection.push(value);
-          console.log("Added object")
+          this.offline.searchByIDAndReturnValue('toBeUpdatedStatusWhenOnline', 'toBeUpdatedStatus', localValue.id).then((returnedValue) => {
+            let recivedStatus: any = returnedValue;
+            if (recivedStatus != undefined && typeof (recivedStatus) === 'boolean') {
+              localValue.taskRealized = recivedStatus;
+            }
+            if (recivedStatus != undefined && typeof (recivedStatus) === 'number') {
+              localValue.checkBoxQuantityRealized = recivedStatus;
+            }
+          }).then(() => { this.POSTuserTasksCollection.push(localValue); })
         }
         else {
-          localValue.forEach(element => { this.POSTuserTasksCollection.push(element) });
+          for (let itterator = 0; itterator < localValue.length; itterator++) {
+            this.offline.searchByIDAndReturnValue('toBeUpdatedStatusWhenOnline', 'toBeUpdatedStatus', localValue[itterator].id).then((returnedValue) => {
+              let recivedStatus: any = returnedValue
+              if (recivedStatus != undefined && typeof (recivedStatus) === 'boolean') {
+                localValue[i].taskRealized = recivedStatus;
+              }
+              if (recivedStatus != undefined && typeof (recivedStatus) === 'number') {
+                localValue[i].checkBoxQuantityRealized = recivedStatus;
+              }
+            })
+            this.POSTuserTasksCollection.push(localValue[i])
+          }
         }
-        this.offline.clearCollection('toBeSavedWhenOnline');
       }
+      this.offline.clearCollection('toBeSavedWhenOnline');
     });
   }
+
+
 
   pushDataToUserCollection(Data) {
     if (this.offline.checkInternetConnection()) {
@@ -133,15 +162,19 @@ export class DatabaseService {
   }
 
   updateDBCollectionCheckbox(id, newContent, index) {
-    this.db.object(`/weekly-tasks/${this.userId}/${id}`).update({ checkBoxQuantityRealized: newContent });
-    this.updateLocalArrayStatus(index, newContent, true);
+    if (this.offline.checkInternetConnection()) {
+      this.db.object(`/weekly-tasks/${this.userId}/${id}`).update({ checkBoxQuantityRealized: newContent });
+    } else {
+      this.offline.saveUpdateInLocalStorage(id, newContent);
+      this.updateLocalArrayStatus(index, newContent, true);
+    }
   }
 
   updateDBCollectionTaskStatusToggle(id, status, index) {
     if (this.offline.checkInternetConnection()) {
       this.db.object(`/weekly-tasks/${this.userId}/${id}`).update({ taskRealized: !status });
     } else {
-      this.offline.saveUpdateInLocalStorage(id, !status);
+      this.offline.saveUpdateInLocalStorage(id, status);
       this.updateLocalArrayStatus(index, status, false);
     }
   }
@@ -222,6 +255,4 @@ export class DatabaseService {
       this.thisWeekTasks[indexOfArray].taskRealized = !status;
     }
   }
-
-
 }

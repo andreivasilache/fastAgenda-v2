@@ -33,11 +33,11 @@ export class OfflineDbService {
     });
   }
   isObject(item) {
-    return item.constructor.name === "Object";
+    return item && item.constructor.name === "Object";
   }
 
   isArray(item) {
-    return item.constructor === Array;
+    return item && item.constructor === Array;
   }
 
   clearCollection(variableName) {
@@ -183,6 +183,20 @@ export class OfflineDbService {
     }
   }
 
+  async searchByIDAndReturnValue(variableName, localForgeValue, id) {
+    await this[variableName].getItem(localForgeValue).then((data) => {
+      let recivedData: any = data;
+      if (this.isObject(recivedData)) {
+        if (recivedData.id == id) return recivedData.status;
+      }
+      if (this.isArray(recivedData)) {
+        for (let itterator = 0; itterator < recivedData.length; itterator++) {
+          if (recivedData[itterator].id == id) return recivedData[itterator].status;
+        }
+      }
+    });
+  }
+
 
   saveUpdateInLocalStorage(idOfTask, newData) {
     this.checkIfIsInLocalStore('toBeUpdatedStatusWhenOnline', 'toBeUpdatedStatus', idOfTask).then((isHere) => {
@@ -192,9 +206,9 @@ export class OfflineDbService {
             let localArray = data;
             let indexInArray = this.returnLocalIndex(data, 'id', idOfTask);
             if (localArray[indexInArray].haveCheckBox) {
-
+              localArray[indexInArray].checkBoxQuantityRealized = newData;
             } else {
-              localArray[indexInArray].status = newData;
+              localArray[indexInArray].status = !newData;
             }
             this.saveLocal('toBeUpdatedStatus', 'toBeUpdatedStatusWhenOnline', localArray);
           }
