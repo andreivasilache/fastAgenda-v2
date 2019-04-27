@@ -32,6 +32,8 @@ export class DatabaseService {
         this.getUserDataForThisWeek();
         subscriber.unsubscribe();
       });
+
+      this.offlineOpperations();
       let number = 0;
       this.checkConnectionInterval = setInterval(() => {
         if (this.offline.checkInternetConnection()) {
@@ -40,7 +42,6 @@ export class DatabaseService {
           number === 1 ? clearInterval(this.checkConnectionInterval) : number++;
         }
       }, 1000)
-      this.offlineOpperations();
     }, 500)
   }
 
@@ -48,7 +49,27 @@ export class DatabaseService {
   offlineOpperations() {
     this.getLocalDBData();
     this.getNotDBSavedData();
+    setTimeout(() => {
+      if (!this.offline.checkInternetConnection())
+        this.updateTaskStatusFromLocalDb();
+    }, 500);
+  }
 
+  updateTaskStatusFromLocalDb() {
+    console.log(this.thisWeekTasks);
+    for (let index = 0; index < this.thisWeekTasks.length; index++) {
+      this.offline.searchByIDAndReturnValue('toBeUpdatedStatusWhenOnline', 'toBeUpdatedStatus', this.thisWeekTasks[index].id).then((recivedData) => {
+        let recivedStatus: any = recivedData;
+        if (recivedStatus != undefined && typeof (recivedStatus) === 'boolean') {
+          this.thisWeekTasks[index].taskRealized = recivedStatus;
+        }
+        if (recivedStatus != undefined && typeof (recivedStatus) === 'number') {
+          this.thisWeekTasks[index].checkBoxQuantityRealized = recivedStatus;
+        }
+      })
+    }
+    // this.getLocalDBData();
+    // this.getNotDBSavedData();
   }
 
   generateRandomId() {
@@ -58,6 +79,7 @@ export class DatabaseService {
   getLocalDBData() {
     this.offline.toDoWeek.getItem('toDoWeek', (err, value) => {
       if (value && this.thisWeekTags.length == 0) {
+        this.thisWeekTasks = [];
         this.thisWeekTasks = value;
         this.extractTagsFromObject(this.thisWeekTasks);
       }
@@ -74,6 +96,7 @@ export class DatabaseService {
     this.offline.toBeSavedWhenOnline.getItem('toBeSaved', (err, value) => {
       let localValue: any = value;
       if (value) {
+        this.thisWeekTasks = [];
         if (localValue.constructor.name == "Object") {
           this.thisWeekTasks.push(localValue);
         } else {
@@ -125,11 +148,13 @@ export class DatabaseService {
               let recivedStatus: any = returnedValue
               if (recivedStatus != undefined && typeof (recivedStatus) === 'boolean') {
                 localValue[i].taskRealized = recivedStatus;
+                console.log(localValue[i].taskRealized = recivedStatus)
               }
               if (recivedStatus != undefined && typeof (recivedStatus) === 'number') {
                 localValue[i].checkBoxQuantityRealized = recivedStatus;
               }
             })
+
             this.POSTuserTasksCollection.push(localValue[i])
           }
         }
@@ -165,7 +190,7 @@ export class DatabaseService {
     if (this.offline.checkInternetConnection()) {
       this.db.object(`/weekly-tasks/${this.userId}/${id}`).update({ checkBoxQuantityRealized: newContent });
     } else {
-      this.offline.saveUpdateInLocalStorage(id, newContent);
+      this.offline.saveUpdateInLocalStorage(id, newContent, true);
       this.updateLocalArrayStatus(index, newContent, true);
     }
   }
@@ -174,7 +199,7 @@ export class DatabaseService {
     if (this.offline.checkInternetConnection()) {
       this.db.object(`/weekly-tasks/${this.userId}/${id}`).update({ taskRealized: !status });
     } else {
-      this.offline.saveUpdateInLocalStorage(id, status);
+      this.offline.saveUpdateInLocalStorage(id, status, false);
       this.updateLocalArrayStatus(index, status, false);
     }
   }
@@ -187,6 +212,7 @@ export class DatabaseService {
 
   getUserDataForThisWeek() {
     this.GETuserTasksCollection.subscribe((userData) => {
+      console.log(userData);
       this.sendDataObjectWithProprietyToArray(userData, this.DBTasks, 'id');
       this.extractThisWeekTasks(this.DBTasks);
       this.extractTagsFromObject(this.thisWeekTasks);
@@ -252,6 +278,7 @@ export class DatabaseService {
     if (haveCheckBox) {
       this.thisWeekTasks[indexOfArray].checkBoxQuantityRealized = status;
     } else {
+      console.log(indexOfArray);
       this.thisWeekTasks[indexOfArray].taskRealized = !status;
     }
   }

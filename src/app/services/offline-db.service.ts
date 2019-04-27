@@ -184,46 +184,59 @@ export class OfflineDbService {
   }
 
   async searchByIDAndReturnValue(variableName, localForgeValue, id) {
+    let toBeReturned;
     await this[variableName].getItem(localForgeValue).then((data) => {
       let recivedData: any = data;
-      if (this.isObject(recivedData)) {
-        if (recivedData.id == id) return recivedData.status;
-      }
-      if (this.isArray(recivedData)) {
-        for (let itterator = 0; itterator < recivedData.length; itterator++) {
-          if (recivedData[itterator].id == id) return recivedData[itterator].status;
-        }
-      }
+      toBeReturned = this.checkObjectPropForMatch(recivedData, id, 'id');
     });
+    return toBeReturned;
   }
 
+  checkObjectPropForMatch(recivedData, id, propriety) {
+    let toBeReturned;
+    if (this.isObject(recivedData)) {
+      if (recivedData[propriety] == id) return recivedData.status;
+    }
+    if (this.isArray(recivedData)) {
+      for (let itterator = 0; itterator < recivedData.length; itterator++) {
+        if (recivedData[itterator][propriety] == id) return recivedData[itterator].status;
+      }
+    }
+  }
 
-  saveUpdateInLocalStorage(idOfTask, newData) {
+  saveUpdateInLocalStorage(idOfTask, newData, haveCheckBox) {
+    console.log(newData);
     this.checkIfIsInLocalStore('toBeUpdatedStatusWhenOnline', 'toBeUpdatedStatus', idOfTask).then((isHere) => {
       if (isHere) {
         this.getLocalForgeData('toBeUpdatedStatusWhenOnline', 'toBeUpdatedStatus').then((data) => {
+          let localArray = data;
+          let indexInArray = this.returnLocalIndex(data, 'id', idOfTask);
+          haveCheckBox = false;
           if (this.isArray(data)) {
-            let localArray = data;
-            let indexInArray = this.returnLocalIndex(data, 'id', idOfTask);
             if (localArray[indexInArray].haveCheckBox) {
-              localArray[indexInArray].checkBoxQuantityRealized = newData;
+              haveCheckBox = true;
+              localArray[indexInArray].status = newData;
             } else {
               localArray[indexInArray].status = !newData;
             }
             this.saveLocal('toBeUpdatedStatus', 'toBeUpdatedStatusWhenOnline', localArray);
           }
           if (this.isObject(data)) {
-            data.status = newData;
+            if (haveCheckBox) {
+              data.status = newData;
+            } else {
+              data.status = !newData;
+            }
             this.saveLocal('toBeUpdatedStatus', 'toBeUpdatedStatusWhenOnline', data);
           }
         })
       } else {
         this.pushDataToOfflineDb('toBeUpdatedStatus', 'toBeUpdatedStatusWhenOnline', {
           id: idOfTask,
-          status: newData
+          status: haveCheckBox ? newData : !newData,
+          haveCheckBox: haveCheckBox
         });
       }
     });
   }
 }
-

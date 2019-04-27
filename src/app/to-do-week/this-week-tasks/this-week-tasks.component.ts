@@ -84,9 +84,10 @@ export class ThisWeekTasksComponent implements OnInit {
   }
 
   toggleTaskStatus(elementId, currentStatus, haveCheckBox, localIndex) {
+    console.log({ elementId, currentStatus, haveCheckBox, localIndex });
     if (!haveCheckBox) {
       if (currentStatus === false) {
-        this.db.updateDBCollectionTaskStatusToggle(elementId, !currentStatus, localIndex);
+        this.db.updateDBCollectionTaskStatusToggle(elementId, currentStatus, localIndex);
       } else {
         const dialogRef = this.dialog.open(MatDialogComponent, {
           width: '350px',
