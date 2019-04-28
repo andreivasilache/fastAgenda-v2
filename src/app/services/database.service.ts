@@ -13,6 +13,7 @@ import { OfflineDbService } from './offline-db.service';
 export class DatabaseService {
   POSTuserTasksCollection;
   GETuserTasksCollection = new Observable<any>();
+
   userId;
   checkConnectionInterval;
 
@@ -24,16 +25,20 @@ export class DatabaseService {
   tasksGroupedByWeek = [];
 
   constructor(public db: AngularFireDatabase, public auth: AuthService, public firebaseAuth: AngularFireAuth, private offline: OfflineDbService) {
+    this.offlineOpperations();
     setTimeout(() => {
       let subscriber = firebaseAuth.authState.subscribe((userData) => {
+        let localUid = userData.uid;
+        this.userId = localUid;
+
         this.POSTuserTasksCollection = this.db.list(`/weekly-tasks/${userData.uid}`);
         this.GETuserTasksCollection = this.db.object(`/weekly-tasks/${userData.uid}`).valueChanges();
-        this.userId = userData.uid;
+
         this.getUserDataForThisWeek();
         subscriber.unsubscribe();
+
       });
 
-      this.offlineOpperations();
       let number = 0;
       this.checkConnectionInterval = setInterval(() => {
         if (this.offline.checkInternetConnection()) {
@@ -56,7 +61,6 @@ export class DatabaseService {
   }
 
   updateTaskStatusFromLocalDb() {
-    console.log(this.thisWeekTasks);
     for (let index = 0; index < this.thisWeekTasks.length; index++) {
       this.offline.searchByIDAndReturnValue('toBeUpdatedStatusWhenOnline', 'toBeUpdatedStatus', this.thisWeekTasks[index].id).then((recivedData) => {
         let recivedStatus: any = recivedData;
@@ -68,8 +72,6 @@ export class DatabaseService {
         }
       })
     }
-    // this.getLocalDBData();
-    // this.getNotDBSavedData();
   }
 
   generateRandomId() {
@@ -86,17 +88,32 @@ export class DatabaseService {
     });
   }
 
-  //
-  //      APPLAY CHANGES FROM 'TO BE UPDATED' to local data!
-  //      send data updated from localStoareTodb
-  //
+  checkLocalDBStatusMatch() {
+    let localGetData = this.db.object(`/weekly-tasks/${this.userId}`).valueChanges();
+    let subscriber = localGetData.subscribe(data => {
 
+      subscriber.unsubscribe();
+    });
+
+
+    /**
+     *  If there is a difference between data from online db and localDB,update the
+     * online collection with data which is different ( reffering on  taskStatus )
+     *
+    **/
+
+  }
+
+  async returnOneTaskFromDBbyId(id) {
+    let gotData = this.db.object(`/weekly-tasks/${this.userId}`);
+    console.log(gotData);
+    return await gotData;
+  }
 
   getNotDBSavedData() {
     this.offline.toBeSavedWhenOnline.getItem('toBeSaved', (err, value) => {
       let localValue: any = value;
       if (value) {
-        this.thisWeekTasks = [];
         if (localValue.constructor.name == "Object") {
           this.thisWeekTasks.push(localValue);
         } else {
@@ -145,10 +162,11 @@ export class DatabaseService {
         else {
           for (let itterator = 0; itterator < localValue.length; itterator++) {
             this.offline.searchByIDAndReturnValue('toBeUpdatedStatusWhenOnline', 'toBeUpdatedStatus', localValue[itterator].id).then((returnedValue) => {
-              let recivedStatus: any = returnedValue
+              let recivedStatus: any = returnedValue;
+              console.log({ recivedStatus })
               if (recivedStatus != undefined && typeof (recivedStatus) === 'boolean') {
                 localValue[i].taskRealized = recivedStatus;
-                console.log(localValue[i].taskRealized = recivedStatus)
+                console.log(localValue[i].taskRealized)
               }
               if (recivedStatus != undefined && typeof (recivedStatus) === 'number') {
                 localValue[i].checkBoxQuantityRealized = recivedStatus;
@@ -211,8 +229,8 @@ export class DatabaseService {
   }
 
   getUserDataForThisWeek() {
+    this.checkLocalDBStatusMatch();
     this.GETuserTasksCollection.subscribe((userData) => {
-      console.log(userData);
       this.sendDataObjectWithProprietyToArray(userData, this.DBTasks, 'id');
       this.extractThisWeekTasks(this.DBTasks);
       this.extractTagsFromObject(this.thisWeekTasks);
@@ -238,7 +256,6 @@ export class DatabaseService {
 
   extractThisWeekTasks(objArr) {
     this.thisWeekTasks = [];
-    console.log()
     let startOfTheWeekDatISO = moment().startOf('isoWeek').toDate().toISOString();
     for (let prop in objArr) {
       if (objArr[prop].weekStartDate == startOfTheWeekDatISO) {
@@ -278,7 +295,6 @@ export class DatabaseService {
     if (haveCheckBox) {
       this.thisWeekTasks[indexOfArray].checkBoxQuantityRealized = status;
     } else {
-      console.log(indexOfArray);
       this.thisWeekTasks[indexOfArray].taskRealized = !status;
     }
   }
