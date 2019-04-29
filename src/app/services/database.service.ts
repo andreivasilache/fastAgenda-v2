@@ -5,6 +5,8 @@ import { AngularFireAuth } from 'angularfire2/auth';
 import { Observable } from 'rxjs';
 import * as moment from "moment";
 import { OfflineDbService } from './offline-db.service';
+import { take } from 'rxjs/operators';
+
 
 
 @Injectable({
@@ -25,9 +27,12 @@ export class DatabaseService {
   tasksGroupedByWeek = [];
 
   constructor(public db: AngularFireDatabase, public auth: AuthService, public firebaseAuth: AngularFireAuth, private offline: OfflineDbService) {
+
     this.offlineOpperations();
+
     setTimeout(() => {
       let subscriber = firebaseAuth.authState.subscribe((userData) => {
+
         let localUid = userData.uid;
         this.userId = localUid;
 
@@ -41,10 +46,12 @@ export class DatabaseService {
 
       let number = 0;
       this.checkConnectionInterval = setInterval(() => {
+
         if (this.offline.checkInternetConnection()) {
           this.pushOfflineStoredDataWhenConnection();
           this.deleteOfflineStoredDataWhenConnection();
           number === 1 ? clearInterval(this.checkConnectionInterval) : number++;
+
         }
       }, 1000)
     }, 500)
@@ -57,7 +64,7 @@ export class DatabaseService {
     setTimeout(() => {
       if (!this.offline.checkInternetConnection())
         this.updateTaskStatusFromLocalDb();
-    }, 500);
+    }, 200);
   }
 
   updateTaskStatusFromLocalDb() {
@@ -89,25 +96,59 @@ export class DatabaseService {
   }
 
   checkLocalDBStatusMatch() {
-    let localGetData = this.db.object(`/weekly-tasks/${this.userId}`).valueChanges();
-    let subscriber = localGetData.subscribe(data => {
-
-      subscriber.unsubscribe();
-    });
-
-
-    /**
-     *  If there is a difference between data from online db and localDB,update the
-     * online collection with data which is different ( reffering on  taskStatus )
-     *
-    **/
-
+    this.returnAllEventsFromDB().then((data) => { // online data
+      let onlineData: any = data;
+      for (let indexTask = 0; indexTask < this.thisWeekTasks.length; indexTask++) { // offline data
+        for (let onlineIndex = 0; onlineIndex < onlineData.length; onlineIndex++) {
+          if (onlineData[onlineIndex].id === this.thisWeekTasks[indexTask].id || onlineData[onlineIndex].offlineGeneratedId === this.thisWeekTasks[indexTask].id
+          ) {
+            if (onlineData[onlineIndex].haveCheckBox
+              && onlineData[onlineIndex].checkBoxQuantityRealized != this.thisWeekTasks[indexTask].checkBoxQuantityRealized) {
+              console.log(this.thisWeekTasks[indexTask].checkBoxQuantityRealized);
+              this.db.object(`/weekly-tasks/${this.userId}/${onlineData[onlineIndex].id}`).update({ checkBoxQuantityRealized: this.thisWeekTasks[indexTask].checkBoxQuantityRealized });
+            }
+            if (!onlineData[onlineIndex].haveCheckBox
+              && onlineData[onlineIndex].taskRealized != this.thisWeekTasks[indexTask].taskRealized) {
+              console.log(this.thisWeekTasks[indexTask].taskRealized)
+              this.db.object(`/weekly-tasks/${this.userId}/${onlineData[onlineIndex].id}`).update({ taskRealized: this.thisWeekTasks[indexTask].taskRealized });
+            }
+          }
+        }
+      }
+    })
   }
 
-  async returnOneTaskFromDBbyId(id) {
-    let gotData = this.db.object(`/weekly-tasks/${this.userId}`);
-    console.log(gotData);
-    return await gotData;
+  async returnAllEventsFromDB() {
+    let localData = [];
+    return new Promise((resolve, reject) => {
+      this.db.object(`/weekly-tasks/${this.userId}`).valueChanges().pipe(take(1)).subscribe(data => {
+        this.sendDataObjectWithProprietyToArray(data, localData, 'id');
+        this.checkOfflineMatchToBeUpdated(this.thisWeekTasks);
+        resolve(localData);
+      }, reject)
+    })
+  }
+
+  checkOfflineMatchToBeUpdated(array) {
+    let onlineArray: any = array;
+    this.offline.getLocalForgeData('toBeUpdatedStatusWhenOnline', 'toBeUpdatedStatus').then(toBeUpdatedData => {
+      let localData: any = toBeUpdatedData;
+      for (let onlineIndex = 0; onlineIndex < array.length; onlineIndex++) {
+        for (let localIndex = 0; localIndex < localData.length; localIndex++) {
+          if (onlineArray[onlineIndex].id === localData[localIndex].id || onlineArray[onlineIndex].offlineGeneratedId === localData[localIndex].id) {
+            if (onlineArray[onlineIndex].haveCheckBox) {
+              array[onlineIndex].checkBoxQuantityRealized = localData[localIndex].checkBoxQuantityRealized;
+            }
+            if (!onlineArray[onlineIndex].haveCheckBox) {
+              array[onlineIndex].taskRealized = localData[localIndex].taskRealized;
+            }
+          }
+        }
+      }
+
+      console.log(array);
+      console.log(toBeUpdatedData);
+    })
   }
 
   getNotDBSavedData() {
@@ -172,7 +213,6 @@ export class DatabaseService {
                 localValue[i].checkBoxQuantityRealized = recivedStatus;
               }
             })
-
             this.POSTuserTasksCollection.push(localValue[i])
           }
         }
@@ -239,6 +279,7 @@ export class DatabaseService {
       this.offline.saveLocal('toDoWeek', 'toDoWeek', this.thisWeekTasks);
       // this.offline.saveToDoWeekData(this.thisWeekTasks);
     });
+    console.log(this.thisWeekTasks);
   }
 
   sortSumarryByDate(): void {
